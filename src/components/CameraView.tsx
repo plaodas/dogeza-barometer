@@ -1,57 +1,31 @@
-import { useEffect, useRef, useState } from 'react'
+import type { RefObject } from 'react'
 import styles from './CameraView.module.css'
 
 type CameraViewProps = {
   compact?: boolean
+  videoRef: RefObject<HTMLVideoElement | null>
+  ready: boolean
+  error?: string | null
+  badge?: string
 }
 
-export function CameraView({ compact = false }: CameraViewProps) {
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const [ready, setReady] = useState(false)
-  const [message, setMessage] = useState('カメラ待機中')
-
-  useEffect(() => {
-    let stream: MediaStream | null = null
-    let cancelled = false
-
-    async function start() {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setMessage('この環境ではカメラを使えません')
-        return
-      }
-
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user' },
-          audio: false,
-        })
-        if (cancelled || !videoRef.current) return
-        videoRef.current.srcObject = stream
-        await videoRef.current.play()
-        setReady(true)
-      } catch {
-        setMessage('カメラ未接続（ダミー顔で代用）')
-      }
-    }
-
-    void start()
-
-    return () => {
-      cancelled = true
-      stream?.getTracks().forEach((track) => track.stop())
-    }
-  }, [])
-
+export function CameraView({
+  compact = false,
+  videoRef,
+  ready,
+  error,
+  badge,
+}: CameraViewProps) {
   return (
     <div className={`${styles.wrap} ${compact ? styles.compact : styles.wide}`}>
-      <span className={styles.label}>{ready ? 'LIVE' : 'DUMMY'}</span>
+      <span className={styles.label}>{badge ?? (ready ? 'LIVE' : 'DUMMY')}</span>
       <video
         ref={videoRef}
         className={styles.video}
         muted
         playsInline
         autoPlay
-        style={{ display: ready ? 'block' : 'none' }}
+        style={{ opacity: ready ? 1 : 0 }}
       />
       {!ready && (
         <div className={styles.fallback}>
@@ -59,7 +33,7 @@ export function CameraView({ compact = false }: CameraViewProps) {
             <span className={styles.head} />
             <span className={styles.body} />
           </div>
-          <p>{message}</p>
+          <p>{error ?? 'カメラ待機中'}</p>
         </div>
       )}
     </div>

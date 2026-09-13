@@ -163,39 +163,68 @@ button {
   bottom: 0;
   left: 0;
   height: 22vh;
-  background:
+  background-color: var(--color-tatami-a);
+  background-image:
+    linear-gradient(
+      180deg,
+      var(--color-tatami-a) 0,
+      var(--color-tatami-a) 4px,
+      var(--color-tatami-heri) 4px,
+      var(--color-tatami-heri) 18px,
+      transparent 18px,
+      transparent 100%
+    ),
     repeating-linear-gradient(
       90deg,
-      var(--color-floor-a) 0 46px,
-      var(--color-floor-b) 46px 92px
-    ),
-    linear-gradient(#0000, rgba(0, 0, 0, 0.35));
-  box-shadow: inset 0 18px 28px rgba(0, 0, 0, 0.45);
+      var(--color-tatami-heri) 0,
+      var(--color-tatami-heri) 16px,
+      var(--color-tatami-a) 16px,
+      var(--color-tatami-a) 148px,
+      var(--color-tatami-heri) 148px,
+      var(--color-tatami-heri) 164px,
+      var(--color-tatami-b) 164px,
+      var(--color-tatami-b) 296px
+    );
+  box-shadow:
+    inset 0 20px 24px rgba(20, 22, 8, 0.16),
+    inset 0 -30px 36px rgba(0, 0, 0, 0.14);
   transition: height 420ms ease-out, filter 420ms ease-out;
 }
 
 .floor::before {
   content: '';
   position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    180deg,
-    transparent 0 18px,
-    var(--color-floor-line) 18px 20px
-  );
-  opacity: 0.35;
+  inset: 18px 0 0;
+  opacity: 0.55;
+  background-image:
+    repeating-linear-gradient(
+      180deg,
+      rgba(236, 240, 180, 0.55) 0,
+      rgba(236, 240, 180, 0.55) 1px,
+      transparent 1px,
+      transparent 3px,
+      rgba(28, 34, 8, 0.35) 3px,
+      rgba(28, 34, 8, 0.35) 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 5px,
+      rgba(20, 24, 8, 0.16) 5px,
+      rgba(20, 24, 8, 0.16) 6px
+    );
 }
 
 .floor::after {
-  content: '床';
+  content: '畳';
   position: absolute;
-  top: 14px;
+  top: 26px;
   left: 50%;
   transform: translateX(-50%);
   font-family: var(--font-title);
   font-size: 20px;
   letter-spacing: 0.6em;
-  color: rgba(255, 255, 255, 0.28);
+  color: rgba(24, 20, 8, 0.48);
 }
 
 .sr-only {

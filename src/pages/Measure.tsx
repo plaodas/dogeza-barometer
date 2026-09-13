@@ -4,6 +4,7 @@ import { AudioAnalyzer } from '../components/AudioAnalyzer'
 import { CameraView } from '../components/CameraView'
 import { Meter } from '../components/Meter'
 import { useAudioLevel } from '../hooks/useAudioLevel'
+import { useCamera } from '../hooks/useCamera'
 import { useDogezaLevel } from '../hooks/useDogezaLevel'
 import { useFaceEmotion } from '../hooks/useFaceEmotion'
 import { ALERT_THRESHOLD } from '../lib/scoring'
@@ -23,8 +24,16 @@ function statusClass(status: string) {
   return 'status-chip status-chip--ok'
 }
 
+function faceBadge(ready: boolean, modelReady: boolean, detected: boolean) {
+  if (!ready) return 'DUMMY'
+  if (!modelReady) return '読込中'
+  if (!detected) return '顔なし'
+  return '解析中'
+}
+
 export function Measure({ micEnabled, onToggleMic, onFinish }: MeasureProps) {
-  const face = useFaceEmotion(true)
+  const camera = useCamera()
+  const face = useFaceEmotion(camera.videoRef, true)
   const audio = useAudioLevel(micEnabled)
   const [forcedLevel, setForcedLevel] = useState<number | null>(null)
   const [alertOpen, setAlertOpen] = useState(false)
@@ -54,7 +63,16 @@ export function Measure({ micEnabled, onToggleMic, onFinish }: MeasureProps) {
     <section className={`screen ${styles.screen}`}>
       <div className="screen--sinking" style={{ transform: `translateY(${sink}px)` }}>
         <div className={styles.top}>
-          <CameraView compact />
+          <CameraView
+            compact
+            videoRef={camera.videoRef}
+            ready={camera.ready}
+            error={camera.error}
+            badge={faceBadge(camera.ready, face.modelReady, face.detected)}
+          />
+          {camera.ready && face.modelReady && !face.detected && (
+            <p className={styles.hint}>顔をカメラに向けてください</p>
+          )}
         </div>
 
         <div className={styles.meterBlock}>
@@ -73,6 +91,11 @@ export function Measure({ micEnabled, onToggleMic, onFinish }: MeasureProps) {
               話速
               <strong>{Math.round(dogeza.wpmScore)}</strong>
             </div>
+          </div>
+          <div className={styles.emotions}>
+            <span>怒り {Math.round(face.anger)}</span>
+            <span>困惑 {Math.round(face.confusion)}</span>
+            <span>悲しみ {Math.round(face.sadness)}</span>
           </div>
         </div>
       </div>
@@ -101,7 +124,7 @@ export function Measure({ micEnabled, onToggleMic, onFinish }: MeasureProps) {
               80まで上げる
             </button>
             <button type="button" className="btn btn-ghost" onClick={() => setForcedLevel(null)}>
-              自動ゆらぎに戻す
+              実測に戻す
             </button>
           </div>
         </div>

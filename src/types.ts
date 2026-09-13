@@ -7,6 +7,8 @@ export type FaceEmotion = {
   confusion: number
   sadness: number
   score: number
+  detected: boolean
+  modelReady: boolean
 }
 
 export type AudioLevels = {
