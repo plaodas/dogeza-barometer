@@ -1,0 +1,86 @@
+.meter {
+  --needle-angle: -135deg;
+  position: relative;
+  width: min(320px, 78vw);
+  aspect-ratio: 1;
+  margin: 0 auto;
+}
+
+.meter__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.45));
+}
+
+.meter--alert .meter__rim {
+  stroke: var(--color-gold);
+  stroke-width: 10;
+  filter: drop-shadow(0 0 10px rgba(242, 201, 76, 0.75));
+}
+
+.meter__needle {
+  transform-origin: 100px 100px;
+  transform: rotate(var(--needle-angle));
+  transition: transform 160ms ease-out;
+}
+
+.meter__needle--tremor {
+  animation: meter-tremor 0.16s ease-in-out infinite;
+}
+
+.meter__needle--rage {
+  animation: meter-rage 0.08s linear infinite;
+}
+
+.meter__readout {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 28px;
+  pointer-events: none;
+}
+
+.meter__value {
+  font-family: var(--font-body);
+  font-size: clamp(56px, 12vw, 84px);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  color: var(--color-text);
+  text-shadow: 0 6px 0 rgba(0, 0, 0, 0.35);
+}
+
+.meter__unit {
+  margin-top: 6px;
+  font-size: 13px;
+  letter-spacing: 0.28em;
+  color: var(--color-gold);
+}
+
+@keyframes meter-tremor {
+  0%,
+  100% {
+    transform: rotate(var(--needle-angle));
+  }
+  25% {
+    transform: rotate(calc(var(--needle-angle) + 2deg));
+  }
+  75% {
+    transform: rotate(calc(var(--needle-angle) - 2deg));
+  }
+}
+
+@keyframes meter-rage {
+  0%,
+  100% {
+    transform: rotate(calc(var(--needle-angle) - 4deg));
+  }
+  50% {
+    transform: rotate(calc(var(--needle-angle) + 4deg));
+  }
+}

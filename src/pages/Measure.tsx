@@ -1,0 +1,129 @@
+import { useEffect, useRef, useState } from 'react'
+import { AlertModal } from '../components/AlertModal'
+import { AudioAnalyzer } from '../components/AudioAnalyzer'
+import { CameraView } from '../components/CameraView'
+import { Meter } from '../components/Meter'
+import { useAudioLevel } from '../hooks/useAudioLevel'
+import { useDogezaLevel } from '../hooks/useDogezaLevel'
+import { useFaceEmotion } from '../hooks/useFaceEmotion'
+import { ALERT_THRESHOLD } from '../lib/scoring'
+import type { SessionResult } from '../types'
+import styles from './Measure.module.css'
+
+type MeasureProps = {
+  micEnabled: boolean
+  onToggleMic: (enabled: boolean) => void
+  onFinish: (result: SessionResult) => void
+}
+
+function statusClass(status: string) {
+  if (status === '土下座推奨') return 'status-chip status-chip--alert'
+  if (status === '危険') return 'status-chip status-chip--hot'
+  if (status === 'やや危険') return 'status-chip status-chip--warn'
+  return 'status-chip status-chip--ok'
+}
+
+export function Measure({ micEnabled, onToggleMic, onFinish }: MeasureProps) {
+  const face = useFaceEmotion(true)
+  const audio = useAudioLevel(micEnabled)
+  const [forcedLevel, setForcedLevel] = useState<number | null>(null)
+  const [alertOpen, setAlertOpen] = useState(false)
+  const [maxLevel, setMaxLevel] = useState(0)
+  const [recommendCount, setRecommendCount] = useState(0)
+  const armedRef = useRef(true)
+
+  const dogeza = useDogezaLevel(face.score, audio.volumeScore, audio.wpmScore, forcedLevel)
+  const sink = dogeza.level * 0.28
+  const floorHeight = 14 + dogeza.level * 0.72
+
+  useEffect(() => {
+    setMaxLevel((current) => Math.max(current, dogeza.level))
+
+    if (dogeza.level >= ALERT_THRESHOLD && armedRef.current) {
+      armedRef.current = false
+      setRecommendCount((count) => count + 1)
+      setAlertOpen(true)
+    }
+
+    if (dogeza.level < 70) {
+      armedRef.current = true
+    }
+  }, [dogeza.level])
+
+  return (
+    <section className={`screen ${styles.screen}`}>
+      <div className="screen--sinking" style={{ transform: `translateY(${sink}px)` }}>
+        <div className={styles.top}>
+          <CameraView compact />
+        </div>
+
+        <div className={styles.meterBlock}>
+          <Meter level={dogeza.level} />
+          <div className={statusClass(dogeza.status)}>{dogeza.status}</div>
+          <div className={styles.breakdown}>
+            <div>
+              表情
+              <strong>{Math.round(dogeza.faceScore)}</strong>
+            </div>
+            <div>
+              音量
+              <strong>{Math.round(dogeza.volumeScore)}</strong>
+            </div>
+            <div>
+              話速
+              <strong>{Math.round(dogeza.wpmScore)}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.footer}>
+        <AudioAnalyzer
+          enabled={micEnabled}
+          onToggle={onToggleMic}
+          volumeScore={audio.volumeScore}
+          wpm={audio.wpm}
+        />
+        <div className={`panel ${styles.demo}`}>
+          <label>
+            デモ用スライダー
+            <span>{forcedLevel === null ? '自動' : Math.round(forcedLevel)}</span>
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={forcedLevel ?? Math.round(dogeza.level)}
+            onChange={(event) => setForcedLevel(Number(event.target.value))}
+          />
+          <div className={styles.demoActions}>
+            <button type="button" className="btn btn-ghost" onClick={() => setForcedLevel(85)}>
+              80まで上げる
+            </button>
+            <button type="button" className="btn btn-ghost" onClick={() => setForcedLevel(null)}>
+              自動ゆらぎに戻す
+            </button>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          onClick={() => onFinish({ maxLevel, recommendCount })}
+        >
+          計測を終える
+        </button>
+      </div>
+
+      <div className="floor" style={{ height: `${floorHeight}vh` }} />
+
+      {alertOpen && (
+        <AlertModal
+          level={dogeza.level}
+          onMentalBow={() => setAlertOpen(false)}
+          onRealBow={() => setAlertOpen(false)}
+          onClose={() => setAlertOpen(false)}
+        />
+      )}
+    </section>
+  )
+}

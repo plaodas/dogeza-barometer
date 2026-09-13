@@ -1,0 +1,68 @@
+.screen {
+  gap: 12px;
+  padding-top: 16px;
+  padding-bottom: 8px;
+}
+
+.top {
+  display: grid;
+  gap: 12px;
+}
+
+.meterBlock {
+  display: grid;
+  justify-items: center;
+}
+
+.breakdown {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: min(420px, 100%);
+  margin: 8px auto 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.breakdown strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-text);
+  font-size: 18px;
+}
+
+.footer {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 12px;
+  width: min(420px, 100%);
+  margin: auto auto 24px;
+}
+
+.demo {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.demoActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.demo label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.demo input[type='range'] {
+  width: 100%;
+  accent-color: var(--color-gold);
+}
