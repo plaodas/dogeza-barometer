@@ -1,4 +1,5 @@
 import { AudioAnalyzer } from '../components/AudioAnalyzer'
+import { FloorPicker } from '../components/FloorPicker'
 import { CameraView } from '../components/CameraView'
 import { useCamera } from '../hooks/useCamera'
 import styles from './Home.module.css'
@@ -36,6 +37,7 @@ export function Home({ micEnabled, onToggleMic, onStart }: HomeProps) {
           volumeScore={micEnabled ? 36 : 0}
           wpm={micEnabled ? 120 : 0}
         />
+        <FloorPicker />
         <button type="button" className="btn btn-primary" onClick={onStart}>
           土下座の旅を始める
         </button>

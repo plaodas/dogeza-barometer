@@ -1,0 +1,66 @@
+.wrap {
+  margin: 0;
+  padding: 12px;
+  min-inline-size: 0;
+}
+
+.option:has(.input:focus-visible) {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+.legend {
+  padding: 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--color-gold);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.option {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.16);
+  cursor: pointer;
+}
+
+.optionSelected {
+  border-color: var(--color-gold);
+  box-shadow: 0 0 0 1px var(--color-gold);
+}
+
+.input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.swatch {
+  position: relative;
+  height: 34px;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.blurb {
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  text-align: center;
+  color: var(--color-muted);
+}

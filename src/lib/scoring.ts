@@ -68,7 +68,7 @@ const floorMessages = {
   ]
 }
 
-function getResultComment(level: number) {
+export function getResultComment(level: number) {
   if (level >= 90) return random(floorMessages.alert)
   if (level >= 70) return random(floorMessages.high)
   if (level >= 50) return random(floorMessages.midHigh)

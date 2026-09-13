@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AlertModal } from '../components/AlertModal'
+import { Floor } from '../components/Floor'
 import { AudioAnalyzer } from '../components/AudioAnalyzer'
 import { CameraView } from '../components/CameraView'
 import { Meter } from '../components/Meter'
@@ -137,7 +138,7 @@ export function Measure({ micEnabled, onToggleMic, onFinish }: MeasureProps) {
         </button>
       </div>
 
-      <div className="floor" style={{ height: `${floorHeight}vh` }} />
+      <Floor height={`${floorHeight}vh`} />
 
       {alertOpen && (
         <AlertModal

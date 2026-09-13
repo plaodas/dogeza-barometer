@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Floor } from './components/Floor'
 import { Home } from './pages/Home'
 import { Measure } from './pages/Measure'
 import { Result } from './pages/Result'
@@ -37,7 +38,7 @@ export default function App() {
           onRetry={() => setScreen('measure')}
         />
       )}
-      {screen !== 'measure' && <div className="floor" />}
+      {screen !== 'measure' && <Floor />}
     </div>
   )
 }
