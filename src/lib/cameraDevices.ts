@@ -6,6 +6,9 @@ export type CameraChoice = {
   label: string
 }
 
+export const FACING_USER = 'facing:user'
+export const FACING_ENVIRONMENT = 'facing:environment'
+
 const KIND_LABEL: Record<CameraKind, string> = {
   front: '正面カメラ',
   back: '背面カメラ',
@@ -19,6 +22,19 @@ const FRONT_RE = /front|user|face|facetime|integrated|webcam|正面|前|イン/i
 
 export const CAMERA_FADE_MS = 150
 export const CAMERA_DEVICE_KEY = 'dogeza.cameraDeviceId'
+
+export function isMobileCameraPicker() {
+  if (typeof navigator === 'undefined' || typeof window === 'undefined') return false
+  if (/iP(hone|ad|od)/.test(navigator.userAgent)) return true
+  if (
+    /Macintosh/.test(navigator.userAgent) &&
+    'ontouchend' in document &&
+    window.matchMedia('(pointer: coarse)').matches
+  ) {
+    return true
+  }
+  return window.matchMedia('(pointer: coarse)').matches
+}
 
 export function readStoredCameraId() {
   try {
@@ -44,46 +60,85 @@ export function classifyCamera(device: MediaDeviceInfo): CameraKind {
   return 'front'
 }
 
-export function labelCameras(devices: MediaDeviceInfo[]): CameraChoice[] {
-  const inputs = devices.filter((device) => device.kind === 'videoinput' && device.deviceId)
-  const kinds = inputs.map(classifyCamera)
+function numberDuplicateLabels(choices: CameraChoice[]) {
   const totals: Partial<Record<CameraKind, number>> = {}
   const seen: Partial<Record<CameraKind, number>> = {}
-
-  for (const kind of kinds) {
-    totals[kind] = (totals[kind] ?? 0) + 1
+  for (const choice of choices) {
+    totals[choice.kind] = (totals[choice.kind] ?? 0) + 1
   }
-
-  return inputs.map((device, index) => {
-    const kind = kinds[index]
-    seen[kind] = (seen[kind] ?? 0) + 1
-    const base = KIND_LABEL[kind]
-    const label = (totals[kind] ?? 0) > 1 ? `${base} ${seen[kind]}` : base
-    return { deviceId: device.deviceId, kind, label }
+  return choices.map((choice) => {
+    seen[choice.kind] = (seen[choice.kind] ?? 0) + 1
+    const base = KIND_LABEL[choice.kind]
+    const label = (totals[choice.kind] ?? 0) > 1 ? `${base} ${seen[choice.kind]}` : base
+    return { ...choice, label }
   })
+}
+
+export function labelCameras(devices: MediaDeviceInfo[]): CameraChoice[] {
+  const inputs = devices.filter((device) => device.kind === 'videoinput' && device.deviceId)
+  return numberDuplicateLabels(
+    inputs.map((device) => ({
+      deviceId: device.deviceId,
+      kind: classifyCamera(device),
+      label: KIND_LABEL[classifyCamera(device)],
+    })),
+  )
 }
 
 export async function listVideoCameras() {
   if (!navigator.mediaDevices?.enumerateDevices) return []
   const devices = await navigator.mediaDevices.enumerateDevices()
-  return labelCameras(devices)
+  const enumerated = labelCameras(devices)
+  if (!isMobileCameraPicker()) return enumerated
+
+  const virtuals = enumerated.filter((device) => device.kind === 'virtual')
+  return [
+    { deviceId: FACING_USER, kind: 'front' as const, label: KIND_LABEL.front },
+    { deviceId: FACING_ENVIRONMENT, kind: 'back' as const, label: KIND_LABEL.back },
+    ...virtuals,
+  ]
 }
 
-export function cameraConstraints(deviceId?: string | null): MediaStreamConstraints {
-  if (deviceId) {
-    return {
-      video: { deviceId: { exact: deviceId } },
-      audio: false,
-    }
+export function cameraConstraints(choice?: {
+  deviceId?: string | null
+  kind?: CameraKind | null
+}): MediaStreamConstraints {
+  const id = choice?.deviceId
+  const kind = choice?.kind
+  const facing =
+    id === FACING_ENVIRONMENT || kind === 'back'
+      ? 'environment'
+      : id === FACING_USER || kind === 'front'
+        ? 'user'
+        : null
+
+  if (facing === 'environment') {
+    return { video: { facingMode: { exact: 'environment' } }, audio: false }
   }
-  return {
-    video: { facingMode: 'user' },
-    audio: false,
+  if (facing === 'user') {
+    return { video: { facingMode: { ideal: 'user' } }, audio: false }
   }
+  if (id) {
+    return { video: { deviceId: { exact: id } }, audio: false }
+  }
+  return { video: { facingMode: { ideal: 'user' } }, audio: false }
 }
 
 export function shouldMirrorPreview(kind: CameraKind | null) {
   return kind !== 'back' && kind !== 'virtual'
+}
+
+export function persistableCameraId(
+  settings: MediaTrackSettings,
+  fallbackId?: string | null,
+) {
+  if (isMobileCameraPicker()) {
+    if (settings.facingMode === 'environment' || fallbackId === FACING_ENVIRONMENT) {
+      return FACING_ENVIRONMENT
+    }
+    return FACING_USER
+  }
+  return settings.deviceId || fallbackId || null
 }
 
 export function wait(ms: number) {

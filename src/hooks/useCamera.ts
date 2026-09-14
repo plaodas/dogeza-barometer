@@ -2,8 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   CAMERA_FADE_MS,
   cameraConstraints,
+  FACING_ENVIRONMENT,
+  FACING_USER,
   listVideoCameras,
   nextFrame,
+  persistableCameraId,
   readStoredCameraId,
   shouldMirrorPreview,
   stopStream,
@@ -17,6 +20,9 @@ import {
 export function useCamera() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const devicesRef = useRef<CameraChoice[]>([])
+  const selectedRef = useRef<string | null>(null)
+  const kindRef = useRef<CameraKind | null>(null)
   const switchSeq = useRef(0)
   const switchingRef = useRef(false)
   const [ready, setReady] = useState(false)
@@ -28,50 +34,101 @@ export function useCamera() {
   const [faded, setFaded] = useState(false)
   const [generation, setGeneration] = useState(0)
 
-  const refreshDevices = useCallback(async (preferredId?: string | null) => {
+  useEffect(() => {
+    devicesRef.current = devices
+  }, [devices])
+
+  useEffect(() => {
+    selectedRef.current = selectedDeviceId
+  }, [selectedDeviceId])
+
+  useEffect(() => {
+    kindRef.current = kind
+  }, [kind])
+
+  const refreshDevices = useCallback(async (preferredId?: string | null, facingMode?: string) => {
     const next = await listVideoCameras()
     setDevices(next)
+    const byFacing =
+      facingMode === 'environment' || preferredId === FACING_ENVIRONMENT
+        ? FACING_ENVIRONMENT
+        : facingMode === 'user' || preferredId === FACING_USER
+          ? FACING_USER
+          : null
     const activeId =
-      preferredId && next.some((device) => device.deviceId === preferredId)
-        ? preferredId
-        : next[0]?.deviceId ?? null
+      (byFacing && next.some((device) => device.deviceId === byFacing) && byFacing) ||
+      (preferredId && next.some((device) => device.deviceId === preferredId) && preferredId) ||
+      next[0]?.deviceId ||
+      null
+    const activeKind = next.find((device) => device.deviceId === activeId)?.kind ?? 'front'
     setSelectedDeviceId(activeId)
-    setKind(next.find((device) => device.deviceId === activeId)?.kind ?? 'front')
+    setKind(activeKind)
     return next
   }, [])
 
-  const attachStream = useCallback(async (stream: MediaStream) => {
+  const releaseCamera = useCallback(async () => {
     const video = videoRef.current
-    if (!video) throw new Error('video')
+    if (video) {
+      video.pause()
+      video.srcObject = null
+    }
     stopStream(streamRef.current)
-    streamRef.current = stream
-    video.srcObject = stream
-    await video.play()
-    await waitForVideo(video)
+    streamRef.current = null
+    await wait(80)
+  }, [])
 
-    const settings = stream.getVideoTracks()[0]?.getSettings() ?? {}
-    const deviceId = settings.deviceId ?? readStoredCameraId()
-    if (deviceId) writeStoredCameraId(deviceId)
-    const listed = await refreshDevices(deviceId)
-    const matched = listed.find((device) => device.deviceId === deviceId)
-    setKind(matched?.kind ?? (settings.facingMode === 'environment' ? 'back' : 'front'))
-    setReady(true)
-    setError(null)
-    setGeneration((current) => current + 1)
-  }, [refreshDevices])
+  const attachStream = useCallback(
+    async (stream: MediaStream, requestedId?: string | null) => {
+      const video = videoRef.current
+      if (!video) throw new Error('video')
+      stopStream(streamRef.current)
+      streamRef.current = stream
+      video.srcObject = stream
+      await video.play()
+      await waitForVideo(video)
 
-  const requestStream = useCallback(async (deviceId?: string | null) => {
+      const settings = stream.getVideoTracks()[0]?.getSettings() ?? {}
+      const deviceId = persistableCameraId(settings, requestedId)
+      if (deviceId) writeStoredCameraId(deviceId)
+      await refreshDevices(deviceId, settings.facingMode)
+      setReady(true)
+      setError(null)
+      setGeneration((current) => current + 1)
+    },
+    [refreshDevices],
+  )
+
+  const requestStream = useCallback(async (choice?: { deviceId?: string | null; kind?: CameraKind | null }) => {
     if (!navigator.mediaDevices?.getUserMedia) {
       throw new Error('unsupported')
     }
+
+    const wantsBack = choice?.kind === 'back' || choice?.deviceId === FACING_ENVIRONMENT
+    let stream: MediaStream
     try {
-      return await navigator.mediaDevices.getUserMedia(cameraConstraints(deviceId))
+      stream = await navigator.mediaDevices.getUserMedia(cameraConstraints(choice))
     } catch {
-      if (deviceId) {
-        return navigator.mediaDevices.getUserMedia(cameraConstraints(null))
+      if (wantsBack) {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } },
+          audio: false,
+        })
+      } else if (choice?.deviceId && !choice.deviceId.startsWith('facing:')) {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: { ideal: choice.deviceId } },
+          audio: false,
+        })
+      } else {
+        throw new Error('denied')
       }
-      throw new Error('denied')
     }
+
+    const facing = stream.getVideoTracks()[0]?.getSettings().facingMode
+    if (wantsBack && facing === 'user') {
+      stopStream(stream)
+      throw new Error('not-back')
+    }
+    return stream
   }, [])
 
   useEffect(() => {
@@ -79,12 +136,16 @@ export function useCamera() {
 
     async function start() {
       try {
-        const stream = await requestStream(readStoredCameraId())
+        const stored = readStoredCameraId()
+        const stream = await requestStream({
+          deviceId: stored,
+          kind: stored === FACING_ENVIRONMENT ? 'back' : stored === FACING_USER ? 'front' : null,
+        })
         if (cancelled) {
           stopStream(stream)
           return
         }
-        await attachStream(stream)
+        await attachStream(stream, stored)
       } catch {
         if (!cancelled) {
           setError('カメラ未接続（ダミー顔で代用）')
@@ -96,7 +157,7 @@ export function useCamera() {
     void start()
 
     const onDeviceChange = () => {
-      void refreshDevices(streamRef.current?.getVideoTracks()[0]?.getSettings().deviceId)
+      void refreshDevices(selectedRef.current)
     }
     navigator.mediaDevices?.addEventListener?.('devicechange', onDeviceChange)
 
@@ -110,7 +171,14 @@ export function useCamera() {
 
   const switchCamera = useCallback(
     async (deviceId: string) => {
-      if (!deviceId || deviceId === selectedDeviceId || switchingRef.current) return
+      if (!deviceId || deviceId === selectedRef.current || switchingRef.current) return
+      const choice = devicesRef.current.find((device) => device.deviceId === deviceId)
+      if (!choice) return
+
+      const previous = {
+        deviceId: selectedRef.current,
+        kind: kindRef.current,
+      }
       const seq = ++switchSeq.current
       switchingRef.current = true
       setSwitching(true)
@@ -119,15 +187,26 @@ export function useCamera() {
       if (seq !== switchSeq.current) return
 
       try {
-        const stream = await requestStream(deviceId)
+        await releaseCamera()
+        if (seq !== switchSeq.current) return
+        const stream = await requestStream(choice)
         if (seq !== switchSeq.current) {
           stopStream(stream)
           return
         }
-        await attachStream(stream)
+        await attachStream(stream, choice.deviceId)
       } catch {
-        if (seq === switchSeq.current) {
-          setError('カメラを切り替えられませんでした')
+        try {
+          const restored = await requestStream(previous)
+          if (seq === switchSeq.current) {
+            await attachStream(restored, previous.deviceId)
+          } else {
+            stopStream(restored)
+          }
+        } catch {
+          if (seq === switchSeq.current) {
+            setError('カメラを切り替えられませんでした')
+          }
         }
       }
 
@@ -140,7 +219,7 @@ export function useCamera() {
         setSwitching(false)
       }
     },
-    [attachStream, requestStream, selectedDeviceId],
+    [attachStream, releaseCamera, requestStream],
   )
 
   return {
