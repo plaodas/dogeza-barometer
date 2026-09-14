@@ -30,8 +30,15 @@
   line-height: 1.35;
 }
 
+.maxLabel {
+  margin: 0;
+  color: var(--color-gold);
+  letter-spacing: 0.28em;
+  font-size: 12px;
+}
+
 .level {
-  margin: 0 0 22px;
+  margin: 4px 0 22px;
   font-size: 40px;
   font-weight: 900;
 }

@@ -4,7 +4,9 @@ type AudioAnalyzerProps = {
   enabled: boolean
   onToggle: (enabled: boolean) => void
   volumeScore: number
+  volumeDb?: number
   wpm: number
+  error?: string | null
 }
 
 const BAR_COUNT = 8
@@ -13,7 +15,9 @@ export function AudioAnalyzer({
   enabled,
   onToggle,
   volumeScore,
+  volumeDb,
   wpm,
+  error,
 }: AudioAnalyzerProps) {
   return (
     <div className={`panel ${styles.wrap}`}>
@@ -25,6 +29,7 @@ export function AudioAnalyzer({
         />
         マイク {enabled ? 'ON' : 'OFF'}
       </label>
+      {error && <p className={styles.error}>{error}</p>}
       <div className={styles.row}>
         <span>荒ぶりゲージ</span>
         <div className={styles.bars} aria-hidden="true">
@@ -43,6 +48,10 @@ export function AudioAnalyzer({
             )
           })}
         </div>
+      </div>
+      <div className={styles.row}>
+        <span>音量</span>
+        <strong>{enabled && volumeDb !== undefined ? `${Math.round(volumeDb)} dB` : '---'}</strong>
       </div>
       <div className={styles.row}>
         <span>推定話速</span>

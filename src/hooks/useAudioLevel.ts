@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { clamp } from '../lib/scoring'
+import { dbToScore, rmsToDb, SpeechPaceTracker, wpmToScore } from '../lib/audioLevel'
 import type { AudioLevels } from '../types'
 
 const silentAudio: AudioLevels = {
@@ -7,20 +7,9 @@ const silentAudio: AudioLevels = {
   volumeScore: 0,
   wpm: 0,
   wpmScore: 0,
+  error: null,
 }
 
-function dbToScore(db: number) {
-  return clamp(((db + 60) / 55) * 100)
-}
-
-function wpmToScore(wpm: number) {
-  return clamp(((wpm - 80) / 140) * 100)
-}
-
-/**
- * 音量と話速。
- * いまはダミー。次フェーズで WebAudio API に差し替える。
- */
 export function useAudioLevel(enabled: boolean): AudioLevels {
   const [audio, setAudio] = useState<AudioLevels>(silentAudio)
 
@@ -30,21 +19,92 @@ export function useAudioLevel(enabled: boolean): AudioLevels {
       return
     }
 
-    let frame = 0
-    const timer = window.setInterval(() => {
-      frame += 1
-      const burst = frame % 90 > 78 ? 28 : Math.sin(frame / 14) > 0.88 ? 14 : 0
-      const volumeDb = clamp(-48 + Math.sin(frame / 7) * 16 + Math.random() * 8 + burst, -60, -5)
-      const wpm = clamp(110 + Math.cos(frame / 10) * 40 + Math.random() * 20 + burst * 2, 0, 240)
-      setAudio({
-        volumeDb,
-        volumeScore: dbToScore(volumeDb),
-        wpm,
-        wpmScore: wpmToScore(wpm),
-      })
-    }, 160)
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setAudio({ ...silentAudio, error: 'この環境ではマイクを使えません' })
+      return
+    }
 
-    return () => window.clearInterval(timer)
+    let cancelled = false
+    let stream: MediaStream | null = null
+    let context: AudioContext | null = null
+    let raf = 0
+    let lastPublish = 0
+    let smoothDb = -60
+    const pace = new SpeechPaceTracker()
+
+    async function start() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+          video: false,
+        })
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop())
+          return
+        }
+
+        context = new AudioContext()
+        await context.resume()
+        const source = context.createMediaStreamSource(stream)
+        const highpass = context.createBiquadFilter()
+        highpass.type = 'highpass'
+        highpass.frequency.value = 180
+        const gain = context.createGain()
+        gain.gain.value = 1.5
+        const analyser = context.createAnalyser()
+        analyser.fftSize = 2048
+        analyser.smoothingTimeConstant = 0.55
+        source.connect(highpass)
+        highpass.connect(gain)
+        gain.connect(analyser)
+
+        const samples = new Float32Array(analyser.fftSize)
+
+        const tick = (now: number) => {
+          if (cancelled || !context) return
+          analyser.getFloatTimeDomainData(samples)
+
+          let sum = 0
+          for (const sample of samples) sum += sample * sample
+          const rms = Math.sqrt(sum / samples.length)
+          const db = rmsToDb(rms)
+          smoothDb += (db - smoothDb) * (db > smoothDb ? 0.62 : 0.16)
+          const wpm = pace.update(rms, now)
+
+          if (now - lastPublish > 80) {
+            lastPublish = now
+            setAudio({
+              volumeDb: smoothDb,
+              volumeScore: dbToScore(smoothDb),
+              wpm,
+              wpmScore: wpmToScore(wpm),
+              error: null,
+            })
+          }
+
+          raf = requestAnimationFrame(tick)
+        }
+
+        raf = requestAnimationFrame(tick)
+      } catch {
+        if (!cancelled) {
+          setAudio({ ...silentAudio, error: 'マイクを許可してください' })
+        }
+      }
+    }
+
+    void start()
+
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(raf)
+      stream?.getTracks().forEach((track) => track.stop())
+      void context?.close()
+    }
   }, [enabled])
 
   return audio

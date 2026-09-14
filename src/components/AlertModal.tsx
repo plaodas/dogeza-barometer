@@ -21,6 +21,7 @@ export function AlertModal({
         <h2 id="alert-title" className={styles.headline}>
           土下座チャンス到来
         </h2>
+        <p className={styles.maxLabel}>MAX</p>
         <p className={styles.level}>{Math.round(level)}</p>
         <div className={styles.actions}>
           <button type="button" className="btn btn-gold" onClick={onMentalBow}>

@@ -1,6 +1,7 @@
 import { AudioAnalyzer } from '../components/AudioAnalyzer'
 import { FloorPicker } from '../components/FloorPicker'
 import { CameraView } from '../components/CameraView'
+import { useAudioLevel } from '../hooks/useAudioLevel'
 import { useCamera } from '../hooks/useCamera'
 import styles from './Home.module.css'
 
@@ -12,6 +13,7 @@ type HomeProps = {
 
 export function Home({ micEnabled, onToggleMic, onStart }: HomeProps) {
   const camera = useCamera()
+  const audio = useAudioLevel(micEnabled)
 
   return (
     <section className={`screen ${styles.screen}`}>
@@ -34,14 +36,16 @@ export function Home({ micEnabled, onToggleMic, onStart }: HomeProps) {
         <AudioAnalyzer
           enabled={micEnabled}
           onToggle={onToggleMic}
-          volumeScore={micEnabled ? 36 : 0}
-          wpm={micEnabled ? 120 : 0}
+          volumeScore={audio.volumeScore}
+          volumeDb={audio.volumeDb}
+          wpm={audio.wpm}
+          error={audio.error}
         />
         <FloorPicker />
         <button type="button" className="btn btn-primary" onClick={onStart}>
           土下座の旅を始める
         </button>
-        <p className={styles.note}>表情はカメラから解析します。音声はまだダミーです</p>
+        <p className={styles.note}>表情と声は、カメラとマイクからその場で解析します</p>
       </div>
     </section>
   )

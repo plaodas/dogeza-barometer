@@ -39,3 +39,9 @@
   height: 18px;
   accent-color: var(--color-gold);
 }
+
+.error {
+  margin: 0;
+  font-size: 12px;
+  color: #ff8fa3;
+}

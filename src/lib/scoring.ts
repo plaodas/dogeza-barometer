@@ -1,9 +1,17 @@
 import type { DogezaStatus } from '../types'
 
 export const ALERT_THRESHOLD = 80
+const DOGEZA_SENSITIVITY = 0.8
 
 export function clamp(value: number, min = 0, max = 100) {
   return Math.min(max, Math.max(min, value))
+}
+
+function liftMidRange(raw: number) {
+  const x = clamp(raw)
+  if (x <= 18) return x
+  if (x <= 50) return 18 + ((x - 18) * 62) / 32
+  return 80 + (x - 50) * 0.4
 }
 
 export function calcDogezaLevel(
@@ -11,7 +19,8 @@ export function calcDogezaLevel(
   volumeScore: number,
   wpmScore: number,
 ) {
-  return clamp(faceScore * 0.6 + volumeScore * 0.3 + wpmScore * 0.1)
+  const raw = (faceScore * 0.6 + volumeScore * 0.3 + wpmScore * 0.1) * DOGEZA_SENSITIVITY
+  return liftMidRange(raw)
 }
 
 export function getDogezaStatus(level: number): DogezaStatus {

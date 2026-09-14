@@ -38,6 +38,7 @@ export function Measure({ micEnabled, onToggleMic, onFinish }: MeasureProps) {
   const audio = useAudioLevel(micEnabled)
   const [forcedLevel, setForcedLevel] = useState<number | null>(null)
   const [alertOpen, setAlertOpen] = useState(false)
+  const [alertMax, setAlertMax] = useState(0)
   const [maxLevel, setMaxLevel] = useState(0)
   const [recommendCount, setRecommendCount] = useState(0)
   const armedRef = useRef(true)
@@ -52,13 +53,18 @@ export function Measure({ micEnabled, onToggleMic, onFinish }: MeasureProps) {
     if (dogeza.level >= ALERT_THRESHOLD && armedRef.current) {
       armedRef.current = false
       setRecommendCount((count) => count + 1)
+      setAlertMax(dogeza.level)
       setAlertOpen(true)
+    }
+
+    if (alertOpen) {
+      setAlertMax((current) => Math.max(current, dogeza.level))
     }
 
     if (dogeza.level < 70) {
       armedRef.current = true
     }
-  }, [dogeza.level])
+  }, [alertOpen, dogeza.level])
 
   return (
     <section className={`screen ${styles.screen}`}>
@@ -106,7 +112,9 @@ export function Measure({ micEnabled, onToggleMic, onFinish }: MeasureProps) {
           enabled={micEnabled}
           onToggle={onToggleMic}
           volumeScore={audio.volumeScore}
+          volumeDb={audio.volumeDb}
           wpm={audio.wpm}
+          error={audio.error}
         />
         <div className={`panel ${styles.demo}`}>
           <label>
@@ -142,7 +150,7 @@ export function Measure({ micEnabled, onToggleMic, onFinish }: MeasureProps) {
 
       {alertOpen && (
         <AlertModal
-          level={dogeza.level}
+          level={alertMax}
           onMentalBow={() => setAlertOpen(false)}
           onRealBow={() => setAlertOpen(false)}
           onClose={() => setAlertOpen(false)}

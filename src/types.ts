@@ -18,6 +18,7 @@ export type AudioLevels = {
   volumeScore: number
   wpm: number
   wpmScore: number
+  error: string | null
 }
 
 export type SessionResult = {
