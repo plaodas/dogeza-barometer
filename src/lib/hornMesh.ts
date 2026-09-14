@@ -43,7 +43,7 @@ export function createHornMaterial() {
   if (sharedMaterial) return sharedMaterial
   sharedMaterial = new MeshStandardMaterial({
     map: getHornTexture(),
-    color: '#1b4f72',
+    color: '#f2c94c',
   })
   return sharedMaterial
 }

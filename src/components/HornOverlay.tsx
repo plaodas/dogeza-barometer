@@ -1,13 +1,15 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import {
+  AmbientLight,
   Color,
+  DirectionalLight,
   OrthographicCamera,
   Scene,
   WebGLRenderer,
   type Mesh,
 } from 'three'
 import { createHornMaterial, createHornMesh } from '../lib/hornMesh'
-import { getMeterColor } from '../lib/scoring'
+import { getHornColor } from '../lib/scoring'
 import type { FaceLandmark } from '../types'
 import styles from './HornOverlay.module.css'
 
@@ -120,10 +122,13 @@ export function HornOverlay({ videoRef, landmarksRef, dogezaLevel }: HornOverlay
     const material = createHornMaterial()
     left.visible = false
     right.visible = false
-    scene.add(left, right)
+    const ambient = new AmbientLight(0xffffff, 1.6)
+    const key = new DirectionalLight(0xffffff, 1.3)
+    key.position.set(0.4, 1.2, 4)
+    scene.add(left, right, ambient, key)
 
-    const tint = new Color('#1b4f72')
-    const targetTint = new Color('#1b4f72')
+    const tint = new Color(getHornColor(0))
+    const targetTint = new Color(getHornColor(0))
     let smoothLevel = 0
     let leftPose: Pose | null = null
     let rightPose: Pose | null = null
@@ -183,9 +188,11 @@ export function HornOverlay({ videoRef, landmarksRef, dogezaLevel }: HornOverlay
         if (nextLeft && nextRight) {
           leftPose = applyPose(left, nextLeft, leftPose)
           rightPose = applyPose(right, nextRight, rightPose)
-          targetTint.set(getMeterColor(smoothLevel))
+          targetTint.set(getHornColor(smoothLevel))
           tint.lerp(targetTint, 0.2)
           material.color.copy(tint)
+          material.emissive.copy(tint)
+          material.emissiveIntensity = 0.45
         } else {
           left.visible = false
           right.visible = false

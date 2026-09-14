@@ -37,6 +37,12 @@ export function getMeterColor(level: number) {
   return '#1b4f72'
 }
 
+export function getHornColor(level: number) {
+  if (level <= 40) return '#2f7fff'
+  if (level <= 60) return '#f2c94c'
+  return '#d7263d'
+}
+
 const floorMessages = {
   low: [
     '床はまだ遠くにあります',
