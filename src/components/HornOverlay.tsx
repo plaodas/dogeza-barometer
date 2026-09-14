@@ -91,7 +91,7 @@ function poseFor(
   const angle = Math.atan2(worldDirY, worldDirX) - Math.PI / 2
   const crownX = point.x + upX * faceHeight * 0.14
   const crownY = point.y + upY * faceHeight * 0.14
-  const size = faceWidth * lerp(0.42, 0.95, level / 100)
+  const size = faceWidth * lerp(0.42, 1.5, level / 100)
 
   return { x: crownX, y: crownY, angle, size }
 }

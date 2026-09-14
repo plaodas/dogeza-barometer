@@ -28,7 +28,7 @@ let sharedMaterial: MeshStandardMaterial | null = null
 
 export function createHornGeometry() {
   if (sharedGeometry) return sharedGeometry
-  sharedGeometry = new ConeGeometry(0.12, 0.55, 16)
+  sharedGeometry = new ConeGeometry(0.15, 0.65, 16)
   return sharedGeometry
 }
 
