@@ -1,5 +1,6 @@
 import { AudioAnalyzer } from '../components/AudioAnalyzer'
 import { FloorPicker } from '../components/FloorPicker'
+import { CameraSwitcher } from '../components/CameraSwitcher'
 import { CameraView } from '../components/CameraView'
 import { useAudioLevel } from '../hooks/useAudioLevel'
 import { useCamera } from '../hooks/useCamera'
@@ -28,6 +29,8 @@ export function Home({ micEnabled, onToggleMic, onStart }: HomeProps) {
           videoRef={camera.videoRef}
           ready={camera.ready}
           error={camera.error}
+          faded={camera.faded}
+          mirrorPreview={camera.mirrorPreview}
         />
         <p className={styles.caption}>顔と声から、土下座タイミングを計測します</p>
       </div>
@@ -40,6 +43,12 @@ export function Home({ micEnabled, onToggleMic, onStart }: HomeProps) {
           volumeDb={audio.volumeDb}
           wpm={audio.wpm}
           error={audio.error}
+        />
+        <CameraSwitcher
+          devices={camera.devices}
+          selectedDeviceId={camera.selectedDeviceId}
+          switching={camera.switching}
+          onSelect={camera.switchCamera}
         />
         <FloorPicker />
         <button type="button" className="btn btn-primary" onClick={onStart}>

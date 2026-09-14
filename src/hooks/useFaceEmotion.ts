@@ -48,6 +48,8 @@ async function createFaceLandmarker() {
 export function useFaceEmotion(
   videoRef: RefObject<HTMLVideoElement | null>,
   enabled: boolean,
+  paused = false,
+  calibrationKey = 0,
 ): FaceEmotion & {
   landmarksRef: RefObject<FaceLandmark[] | null>
   matrixRef: RefObject<number[] | null>
@@ -57,10 +59,27 @@ export function useFaceEmotion(
   const emotionRef = useRef(idleEmotion)
   const landmarksRef = useRef<FaceLandmark[] | null>(null)
   const matrixRef = useRef<number[] | null>(null)
+  const pausedRef = useRef(paused)
+  const calibrationRef = useRef(calibrationKey)
+  const appliedCalibration = useRef(calibrationKey)
 
   useEffect(() => {
     emotionRef.current = emotion
   }, [emotion])
+
+  useEffect(() => {
+    pausedRef.current = paused
+    if (paused) {
+      landmarksRef.current = null
+      matrixRef.current = null
+    }
+  }, [paused])
+
+  useEffect(() => {
+    calibrationRef.current = calibrationKey
+    landmarksRef.current = null
+    matrixRef.current = null
+  }, [calibrationKey])
 
   useEffect(() => {
     if (!enabled) {
@@ -96,6 +115,18 @@ export function useFaceEmotion(
       const video = videoRef.current
       const landmarker = landmarkerRef.current
       if (cancelled) return
+
+      if (pausedRef.current) {
+        landmarksRef.current = null
+        matrixRef.current = null
+        raf = requestAnimationFrame(tick)
+        return
+      }
+
+      if (appliedCalibration.current !== calibrationRef.current) {
+        appliedCalibration.current = calibrationRef.current
+        lastTimestamp = -1
+      }
 
       if (video && landmarker && video.readyState >= 2 && now > lastTimestamp) {
         lastTimestamp = now

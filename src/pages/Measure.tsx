@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { AlertModal } from '../components/AlertModal'
 import { Floor } from '../components/Floor'
 import { AudioAnalyzer } from '../components/AudioAnalyzer'
+import { CameraSwitcher } from '../components/CameraSwitcher'
 import { CameraView } from '../components/CameraView'
 import { Meter } from '../components/Meter'
+import { useArPipeline } from '../hooks/useArPipeline'
 import { useAudioLevel } from '../hooks/useAudioLevel'
 import { useCamera } from '../hooks/useCamera'
 import { useDogezaLevel } from '../hooks/useDogezaLevel'
@@ -34,7 +36,8 @@ function faceBadge(ready: boolean, modelReady: boolean, detected: boolean) {
 
 export function Measure({ micEnabled, onToggleMic, onFinish }: MeasureProps) {
   const camera = useCamera()
-  const face = useFaceEmotion(camera.videoRef, true)
+  const ar = useArPipeline(camera.switching, camera.generation)
+  const face = useFaceEmotion(camera.videoRef, true, ar.paused, ar.calibrationKey)
   const audio = useAudioLevel(micEnabled)
   const [forcedLevel, setForcedLevel] = useState<number | null>(null)
   const [alertOpen, setAlertOpen] = useState(false)
@@ -78,8 +81,12 @@ export function Measure({ micEnabled, onToggleMic, onFinish }: MeasureProps) {
             badge={faceBadge(camera.ready, face.modelReady, face.detected)}
             landmarksRef={face.landmarksRef}
             dogezaLevel={dogeza.level}
+            faded={camera.faded}
+            mirrorPreview={camera.mirrorPreview}
+            arPaused={ar.paused}
+            arGeneration={ar.calibrationKey}
           />
-          {camera.ready && face.modelReady && !face.detected && (
+          {camera.ready && !camera.switching && face.modelReady && !face.detected && (
             <p className={styles.hint}>顔をカメラに向けてください</p>
           )}
         </div>
@@ -117,6 +124,12 @@ export function Measure({ micEnabled, onToggleMic, onFinish }: MeasureProps) {
           volumeDb={audio.volumeDb}
           wpm={audio.wpm}
           error={audio.error}
+        />
+        <CameraSwitcher
+          devices={camera.devices}
+          selectedDeviceId={camera.selectedDeviceId}
+          switching={camera.switching}
+          onSelect={camera.switchCamera}
         />
         <div className={`panel ${styles.demo}`}>
           <label>

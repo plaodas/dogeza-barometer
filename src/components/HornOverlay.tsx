@@ -25,6 +25,8 @@ type HornOverlayProps = {
   videoRef: RefObject<HTMLVideoElement | null>
   landmarksRef: RefObject<FaceLandmark[] | null>
   dogezaLevel: number
+  paused?: boolean
+  generation?: number
 }
 
 type Pose = {
@@ -78,13 +80,29 @@ function poseFor(
   return { x: crownX, y: crownY, angle, size }
 }
 
-export function HornOverlay({ videoRef, landmarksRef, dogezaLevel }: HornOverlayProps) {
+export function HornOverlay({
+  videoRef,
+  landmarksRef,
+  dogezaLevel,
+  paused = false,
+  generation = 0,
+}: HornOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const levelRef = useRef(dogezaLevel)
+  const pausedRef = useRef(paused)
+  const generationRef = useRef(generation)
 
   useEffect(() => {
     levelRef.current = dogezaLevel
   }, [dogezaLevel])
+
+  useEffect(() => {
+    pausedRef.current = paused
+  }, [paused])
+
+  useEffect(() => {
+    generationRef.current = generation
+  }, [generation])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -112,6 +130,7 @@ export function HornOverlay({ videoRef, landmarksRef, dogezaLevel }: HornOverlay
     let smoothLevel = 0
     let leftPose: Pose | null = null
     let rightPose: Pose | null = null
+    let appliedGeneration = generationRef.current
     let raf = 0
     let disposed = false
 
@@ -156,11 +175,20 @@ export function HornOverlay({ videoRef, landmarksRef, dogezaLevel }: HornOverlay
       const landmarks = landmarksRef.current
       const width = wrap.clientWidth
 
-      if (!video || !landmarks || video.readyState < 2 || width === 0) {
-        left.visible = false
-        right.visible = false
+      if (appliedGeneration !== generationRef.current) {
+        appliedGeneration = generationRef.current
         leftPose = null
         rightPose = null
+        smoothLevel = 0
+      }
+
+      if (pausedRef.current || !video || !landmarks || video.readyState < 2 || width === 0) {
+        left.visible = false
+        right.visible = false
+        if (pausedRef.current) {
+          leftPose = null
+          rightPose = null
+        }
       } else {
         const rect = videoContentRect(video, wrap)
         smoothLevel = lerp(smoothLevel, levelRef.current, 0.18)

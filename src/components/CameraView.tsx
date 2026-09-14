@@ -12,6 +12,10 @@ type CameraViewProps = {
   badge?: string
   landmarksRef?: RefObject<FaceLandmark[] | null>
   dogezaLevel?: number
+  faded?: boolean
+  mirrorPreview?: boolean
+  arPaused?: boolean
+  arGeneration?: number
 }
 
 export function CameraView({
@@ -22,14 +26,20 @@ export function CameraView({
   badge,
   landmarksRef,
   dogezaLevel = 0,
+  faded = false,
+  mirrorPreview = true,
+  arPaused = false,
+  arGeneration = 0,
 }: CameraViewProps) {
   return (
     <div className={`${styles.wrap} ${compact ? styles.compact : styles.wide}`}>
       <span className={styles.label}>{badge ?? (ready ? 'LIVE' : 'DUMMY')}</span>
-      <div className={styles.stage}>
+      <div
+        className={`${styles.stage} ${mirrorPreview ? styles.stageMirrored : ''} ${faded ? styles.stageFaded : ''}`}
+      >
         <video
           ref={videoRef}
-          className={`${styles.video} ${isIOSSelfiePreview() ? styles.undoNativeMirror : ''}`}
+          className={`${styles.video} ${mirrorPreview && isIOSSelfiePreview() ? styles.undoNativeMirror : ''}`}
           muted
           playsInline
           autoPlay
@@ -40,6 +50,8 @@ export function CameraView({
             videoRef={videoRef}
             landmarksRef={landmarksRef}
             dogezaLevel={dogezaLevel}
+            paused={arPaused}
+            generation={arGeneration}
           />
         )}
       </div>
