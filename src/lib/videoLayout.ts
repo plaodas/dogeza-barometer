@@ -22,7 +22,8 @@ export function videoContentRect(video: HTMLVideoElement, wrap: HTMLElement): Vi
   const boxH = wrap.clientHeight
   const vw = Math.max(video.videoWidth, 1)
   const vh = Math.max(video.videoHeight, 1)
-  const scale = Math.min(boxW / vw, boxH / vh)
+  const fit = getComputedStyle(video).objectFit === 'contain' ? 'contain' : 'cover'
+  const scale = fit === 'cover' ? Math.max(boxW / vw, boxH / vh) : Math.min(boxW / vw, boxH / vh)
   const w = vw * scale
   const h = vh * scale
   return {
