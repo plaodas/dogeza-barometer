@@ -1,6 +1,7 @@
 import type { RefObject } from 'react'
 import type { FaceLandmark } from '../types'
 import { HornOverlay } from './HornOverlay'
+import { isIOSSelfiePreview } from '../lib/videoLayout'
 import styles from './CameraView.module.css'
 
 type CameraViewProps = {
@@ -25,21 +26,23 @@ export function CameraView({
   return (
     <div className={`${styles.wrap} ${compact ? styles.compact : styles.wide}`}>
       <span className={styles.label}>{badge ?? (ready ? 'LIVE' : 'DUMMY')}</span>
-      <video
-        ref={videoRef}
-        className={styles.video}
-        muted
-        playsInline
-        autoPlay
-        style={{ opacity: ready ? 1 : 0 }}
-      />
-      {landmarksRef && (
-        <HornOverlay
-          videoRef={videoRef}
-          landmarksRef={landmarksRef}
-          dogezaLevel={dogezaLevel}
+      <div className={styles.stage}>
+        <video
+          ref={videoRef}
+          className={`${styles.video} ${isIOSSelfiePreview() ? styles.undoNativeMirror : ''}`}
+          muted
+          playsInline
+          autoPlay
+          style={{ opacity: ready ? 1 : 0 }}
         />
-      )}
+        {landmarksRef && (
+          <HornOverlay
+            videoRef={videoRef}
+            landmarksRef={landmarksRef}
+            dogezaLevel={dogezaLevel}
+          />
+        )}
+      </div>
       {!ready && (
         <div className={styles.fallback}>
           <div className={styles.face} aria-hidden="true">

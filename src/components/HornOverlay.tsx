@@ -10,6 +10,7 @@ import {
 } from 'three'
 import { createHornMaterial, createHornMesh } from '../lib/hornMesh'
 import { getHornColor } from '../lib/scoring'
+import { landmarkToWrap, videoContentRect } from '../lib/videoLayout'
 import type { FaceLandmark } from '../types'
 import styles from './HornOverlay.module.css'
 
@@ -37,31 +38,10 @@ function lerp(from: number, to: number, amount: number) {
   return from + (to - from) * amount
 }
 
-function containRect(video: HTMLVideoElement, canvasW: number, canvasH: number) {
-  const vw = video.videoWidth || 1
-  const vh = video.videoHeight || 1
-  const scale = Math.min(canvasW / vw, canvasH / vh)
-  const w = vw * scale
-  const h = vh * scale
-  return {
-    x: (canvasW - w) / 2,
-    y: (canvasH - h) / 2,
-    w,
-    h,
-  }
-}
-
-function toCanvas(landmark: FaceLandmark, rect: ReturnType<typeof containRect>) {
-  return {
-    x: rect.x + landmark.x * rect.w,
-    y: rect.y + landmark.y * rect.h,
-  }
-}
-
 function poseFor(
   landmarks: FaceLandmark[],
   index: number,
-  rect: ReturnType<typeof containRect>,
+  rect: ReturnType<typeof videoContentRect>,
   level: number,
 ): Pose | null {
   const anchor = landmarks[index]
@@ -71,11 +51,11 @@ function poseFor(
   const rightEye = landmarks[RIGHT_EYE]
   if (!anchor || !forehead || !chin || !leftEye || !rightEye) return null
 
-  const point = toCanvas(anchor, rect)
-  const up = toCanvas(forehead, rect)
-  const down = toCanvas(chin, rect)
-  const eyeL = toCanvas(leftEye, rect)
-  const eyeR = toCanvas(rightEye, rect)
+  const point = landmarkToWrap(anchor, rect)
+  const up = landmarkToWrap(forehead, rect)
+  const down = landmarkToWrap(chin, rect)
+  const eyeL = landmarkToWrap(leftEye, rect)
+  const eyeR = landmarkToWrap(rightEye, rect)
   const faceWidth = Math.hypot(eyeR.x - eyeL.x, eyeR.y - eyeL.y)
   const faceHeight = Math.hypot(up.x - down.x, up.y - down.y)
   const upLen = Math.max(Math.hypot(up.x - down.x, up.y - down.y), 1)
@@ -150,6 +130,8 @@ export function HornOverlay({ videoRef, landmarksRef, dogezaLevel }: HornOverlay
 
     const observer = new ResizeObserver(resize)
     observer.observe(wrap)
+    window.visualViewport?.addEventListener('resize', resize)
+    window.addEventListener('orientationchange', resize)
     resize()
 
     const applyPose = (mesh: Mesh, next: Pose, previous: Pose | null) => {
@@ -173,7 +155,6 @@ export function HornOverlay({ videoRef, landmarksRef, dogezaLevel }: HornOverlay
       const video = videoRef.current
       const landmarks = landmarksRef.current
       const width = wrap.clientWidth
-      const height = wrap.clientHeight
 
       if (!video || !landmarks || video.readyState < 2 || width === 0) {
         left.visible = false
@@ -181,7 +162,7 @@ export function HornOverlay({ videoRef, landmarksRef, dogezaLevel }: HornOverlay
         leftPose = null
         rightPose = null
       } else {
-        const rect = containRect(video, width, height)
+        const rect = videoContentRect(video, wrap)
         smoothLevel = lerp(smoothLevel, levelRef.current, 0.18)
         const nextLeft = poseFor(landmarks, LEFT_HORN, rect, smoothLevel)
         const nextRight = poseFor(landmarks, RIGHT_HORN, rect, smoothLevel)
@@ -209,6 +190,8 @@ export function HornOverlay({ videoRef, landmarksRef, dogezaLevel }: HornOverlay
       disposed = true
       cancelAnimationFrame(raf)
       observer.disconnect()
+      window.visualViewport?.removeEventListener('resize', resize)
+      window.removeEventListener('orientationchange', resize)
       scene.remove(left, right)
       renderer.dispose()
     }

@@ -19,6 +19,13 @@
   margin: 0 auto;
 }
 
+.stage {
+  position: absolute;
+  inset: 0;
+  transform: scaleX(-1);
+  transform-origin: center;
+}
+
 .video,
 .fallback {
   display: block;
@@ -26,6 +33,10 @@
   height: 100%;
   object-fit: contain;
   background: #091018;
+}
+
+.undoNativeMirror {
+  transform: scaleX(-1);
 }
 
 .fallback {
