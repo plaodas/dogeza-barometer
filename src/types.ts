@@ -4,6 +4,12 @@ export type FloorTexture = 'tatami' | 'carpet' | 'shrine'
 
 export type DogezaStatus = '平常' | 'やや危険' | '危険' | '土下座推奨'
 
+export type FaceLandmark = {
+  x: number
+  y: number
+  z: number
+}
+
 export type FaceEmotion = {
   anger: number
   confusion: number

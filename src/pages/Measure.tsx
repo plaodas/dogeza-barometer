@@ -76,6 +76,8 @@ export function Measure({ micEnabled, onToggleMic, onFinish }: MeasureProps) {
             ready={camera.ready}
             error={camera.error}
             badge={faceBadge(camera.ready, face.modelReady, face.detected)}
+            landmarksRef={face.landmarksRef}
+            dogezaLevel={dogeza.level}
           />
           {camera.ready && face.modelReady && !face.detected && (
             <p className={styles.hint}>顔をカメラに向けてください</p>

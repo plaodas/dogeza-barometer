@@ -5,7 +5,7 @@ import {
   emotionFromBlendshapes,
   smoothEmotion,
 } from '../lib/faceEmotion'
-import type { FaceEmotion } from '../types'
+import type { FaceEmotion, FaceLandmark } from '../types'
 
 const idleEmotion: FaceEmotion = {
   anger: 6,
@@ -25,6 +25,7 @@ async function createFaceLandmarker() {
   const options = {
     runningMode: 'VIDEO' as const,
     outputFaceBlendshapes: true,
+    outputFacialTransformationMatrixes: true,
     numFaces: 1,
     minFaceDetectionConfidence: 0.3,
     minFacePresenceConfidence: 0.3,
@@ -47,10 +48,15 @@ async function createFaceLandmarker() {
 export function useFaceEmotion(
   videoRef: RefObject<HTMLVideoElement | null>,
   enabled: boolean,
-): FaceEmotion {
+): FaceEmotion & {
+  landmarksRef: RefObject<FaceLandmark[] | null>
+  matrixRef: RefObject<number[] | null>
+} {
   const [emotion, setEmotion] = useState<FaceEmotion>(idleEmotion)
   const landmarkerRef = useRef<FaceLandmarker | null>(null)
   const emotionRef = useRef(idleEmotion)
+  const landmarksRef = useRef<FaceLandmark[] | null>(null)
+  const matrixRef = useRef<number[] | null>(null)
 
   useEffect(() => {
     emotionRef.current = emotion
@@ -59,6 +65,8 @@ export function useFaceEmotion(
   useEffect(() => {
     if (!enabled) {
       setEmotion(idleEmotion)
+      landmarksRef.current = null
+      matrixRef.current = null
       return
     }
 
@@ -93,8 +101,14 @@ export function useFaceEmotion(
         lastTimestamp = now
         try {
           const result = landmarker.detectForVideo(video, now)
+          const landmarks = result.faceLandmarks[0]
+          const detected = (landmarks?.length ?? 0) > 0
+          landmarksRef.current = detected ? landmarks : null
+          matrixRef.current = detected
+            ? (result.facialTransformationMatrixes[0]?.data ?? null)
+            : null
+
           const categories = result.faceBlendshapes[0]?.categories ?? []
-          const detected = (result.faceLandmarks[0]?.length ?? 0) > 0
           const next = detected
             ? emotionFromBlendshapes(blendshapesToMap(categories))
             : { anger: 5, confusion: 6, sadness: 4, score: 5 }
@@ -123,8 +137,10 @@ export function useFaceEmotion(
       cancelAnimationFrame(raf)
       landmarkerRef.current?.close()
       landmarkerRef.current = null
+      landmarksRef.current = null
+      matrixRef.current = null
     }
   }, [enabled, videoRef])
 
-  return emotion
+  return { ...emotion, landmarksRef, matrixRef }
 }

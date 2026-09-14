@@ -1,4 +1,6 @@
 import type { RefObject } from 'react'
+import type { FaceLandmark } from '../types'
+import { HornOverlay } from './HornOverlay'
 import styles from './CameraView.module.css'
 
 type CameraViewProps = {
@@ -7,6 +9,8 @@ type CameraViewProps = {
   ready: boolean
   error?: string | null
   badge?: string
+  landmarksRef?: RefObject<FaceLandmark[] | null>
+  dogezaLevel?: number
 }
 
 export function CameraView({
@@ -15,6 +19,8 @@ export function CameraView({
   ready,
   error,
   badge,
+  landmarksRef,
+  dogezaLevel = 0,
 }: CameraViewProps) {
   return (
     <div className={`${styles.wrap} ${compact ? styles.compact : styles.wide}`}>
@@ -27,6 +33,13 @@ export function CameraView({
         autoPlay
         style={{ opacity: ready ? 1 : 0 }}
       />
+      {landmarksRef && (
+        <HornOverlay
+          videoRef={videoRef}
+          landmarksRef={landmarksRef}
+          dogezaLevel={dogezaLevel}
+        />
+      )}
       {!ready && (
         <div className={styles.fallback}>
           <div className={styles.face} aria-hidden="true">
