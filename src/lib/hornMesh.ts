@@ -1,30 +1,34 @@
 import {
-  LatheGeometry,
+  ConeGeometry,
   Mesh,
-  MeshBasicMaterial,
-  SRGBColorSpace,
+  MeshStandardMaterial,
   TextureLoader,
-  Vector2,
-  type BufferGeometry,
+  SRGBColorSpace,
   type Texture,
+  Euler,
 } from 'three'
+import type { FaceLandmark } from '../types'
 
-let sharedGeometry: BufferGeometry | null = null
+function faceRotation(landmarks: FaceLandmark[]) {
+  const leftEye = landmarks[105]
+  const rightEye = landmarks[334]
+  const nose = landmarks[1]
+  const forehead = landmarks[10]
+
+  const roll = Math.atan2(rightEye.y - leftEye.y, rightEye.x - leftEye.x)
+  const pitch = Math.atan2(forehead.y - nose.y, forehead.z - nose.z)
+  const yaw = Math.atan2(rightEye.z - leftEye.z, rightEye.x - leftEye.x)
+
+  return new Euler(pitch, yaw, roll)
+}
+
+let sharedGeometry: ConeGeometry | null = null
 let sharedTexture: Texture | null = null
-let sharedMaterial: MeshBasicMaterial | null = null
+let sharedMaterial: MeshStandardMaterial | null = null
 
 export function createHornGeometry() {
   if (sharedGeometry) return sharedGeometry
-
-  const profile = [
-    new Vector2(0.2, 0),
-    new Vector2(0.22, 0.1),
-    new Vector2(0.18, 0.32),
-    new Vector2(0.12, 0.58),
-    new Vector2(0.07, 0.8),
-    new Vector2(0.025, 1),
-  ]
-  sharedGeometry = new LatheGeometry(profile, 20)
+  sharedGeometry = new ConeGeometry(0.12, 0.55, 16)
   return sharedGeometry
 }
 
@@ -37,7 +41,7 @@ function getHornTexture() {
 
 export function createHornMaterial() {
   if (sharedMaterial) return sharedMaterial
-  sharedMaterial = new MeshBasicMaterial({
+  sharedMaterial = new MeshStandardMaterial({
     map: getHornTexture(),
     color: '#1b4f72',
   })
@@ -46,6 +50,19 @@ export function createHornMaterial() {
 
 export function createHornMesh() {
   const mesh = new Mesh(createHornGeometry(), createHornMaterial())
+  mesh.rotation.x = Math.PI
   mesh.frustumCulled = false
   return mesh
+}
+
+export function placeHorns(leftHorn: Mesh, rightHorn: Mesh, landmarks: FaceLandmark[]) {
+  const left = landmarks[105]
+  const right = landmarks[334]
+
+  leftHorn.position.set(left.x, left.y + 0.1, left.z)
+  rightHorn.position.set(right.x, right.y + 0.1, right.z)
+
+  const rot = faceRotation(landmarks)
+  leftHorn.rotation.copy(rot)
+  rightHorn.rotation.copy(rot)
 }
