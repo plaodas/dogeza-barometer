@@ -21,7 +21,7 @@ type HornOverlayProps = {
   dogezaLevel: number
   paused?: boolean
   generation?: number
-  mirrorX?: boolean
+  mirrorCanvas?: boolean
 }
 
 type Pose = HornPose
@@ -36,13 +36,13 @@ export function HornOverlay({
   dogezaLevel,
   paused = false,
   generation = 0,
-  mirrorX = false,
+  mirrorCanvas = false,
 }: HornOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const levelRef = useRef(dogezaLevel)
   const pausedRef = useRef(paused)
   const generationRef = useRef(generation)
-  const mirrorXRef = useRef(mirrorX)
+  const mirrorCanvasRef = useRef(mirrorCanvas)
 
   useEffect(() => {
     levelRef.current = dogezaLevel
@@ -57,8 +57,8 @@ export function HornOverlay({
   }, [generation])
 
   useEffect(() => {
-    mirrorXRef.current = mirrorX
-  }, [mirrorX])
+    mirrorCanvasRef.current = mirrorCanvas
+  }, [mirrorCanvas])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -87,35 +87,41 @@ export function HornOverlay({
     let leftPose: Pose | null = null
     let rightPose: Pose | null = null
     let appliedGeneration = generationRef.current
-    let appliedMirror = mirrorXRef.current
+    let appliedMirror = mirrorCanvasRef.current
     let raf = 0
     let disposed = false
 
-    const resize = () => {
+    const applyCamera = () => {
       const width = wrap.clientWidth
       const height = wrap.clientHeight
       if (width === 0 || height === 0) return
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
       renderer.setSize(width, height, false)
-      camera.left = -width / 2
-      camera.right = width / 2
+      // CSS では WebGL が反転しない端末があるので、カメラの左右を入れ替えて鏡像にする
+      if (mirrorCanvasRef.current) {
+        camera.left = width / 2
+        camera.right = -width / 2
+      } else {
+        camera.left = -width / 2
+        camera.right = width / 2
+      }
       camera.top = height / 2
       camera.bottom = -height / 2
       camera.updateProjectionMatrix()
     }
 
-    const observer = new ResizeObserver(resize)
+    const observer = new ResizeObserver(applyCamera)
     observer.observe(wrap)
-    window.visualViewport?.addEventListener('resize', resize)
-    window.addEventListener('orientationchange', resize)
-    resize()
+    window.visualViewport?.addEventListener('resize', applyCamera)
+    window.addEventListener('orientationchange', applyCamera)
+    applyCamera()
 
     const follow = hornFollowAmount()
 
     const applyPose = (mesh: Mesh, next: Pose, previous: Pose | null) => {
       const mixed = mixHornPose(previous, next, follow)
       mesh.position.set(mixed.x - wrap.clientWidth / 2, -(mixed.y - wrap.clientHeight / 2), 0)
-      mesh.rotation.set(0.45, 0, mixed.angle)
+      mesh.rotation.set(0.35, 0, mixed.angle)
       mesh.scale.setScalar(mixed.size)
       mesh.visible = true
       return mixed
@@ -127,12 +133,16 @@ export function HornOverlay({
       const landmarks = landmarksRef.current
       const width = wrap.clientWidth
 
-      if (appliedGeneration !== generationRef.current || appliedMirror !== mirrorXRef.current) {
+      if (
+        appliedGeneration !== generationRef.current ||
+        appliedMirror !== mirrorCanvasRef.current
+      ) {
         appliedGeneration = generationRef.current
-        appliedMirror = mirrorXRef.current
+        appliedMirror = mirrorCanvasRef.current
         leftPose = null
         rightPose = null
         smoothLevel = 0
+        applyCamera()
       }
 
       if (pausedRef.current || !video || !landmarks || video.readyState < 2 || width === 0) {
@@ -145,7 +155,7 @@ export function HornOverlay({
       } else {
         const rect = videoContentRect(video, wrap)
         smoothLevel = lerp(smoothLevel, levelRef.current, 0.18)
-        const poses = hornPoses(landmarks, rect, smoothLevel, mirrorXRef.current)
+        const poses = hornPoses(landmarks, rect, smoothLevel)
         if (poses) {
           leftPose = applyPose(left, poses.left, leftPose)
           rightPose = applyPose(right, poses.right, rightPose)
@@ -170,8 +180,8 @@ export function HornOverlay({
       disposed = true
       cancelAnimationFrame(raf)
       observer.disconnect()
-      window.visualViewport?.removeEventListener('resize', resize)
-      window.removeEventListener('orientationchange', resize)
+      window.visualViewport?.removeEventListener('resize', applyCamera)
+      window.removeEventListener('orientationchange', applyCamera)
       scene.remove(left, right)
       renderer.dispose()
     }

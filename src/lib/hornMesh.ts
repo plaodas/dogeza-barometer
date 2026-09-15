@@ -50,7 +50,6 @@ export function createHornMaterial() {
 
 export function createHornMesh() {
   const mesh = new Mesh(createHornGeometry(), createHornMaterial())
-  mesh.rotation.x = Math.PI
   mesh.frustumCulled = false
   return mesh
 }

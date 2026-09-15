@@ -18,10 +18,11 @@ function lerp(from: number, to: number, amount: number) {
   return from + (to - from) * amount
 }
 
-function normalize(x: number, y: number) {
-  const len = Math.hypot(x, y)
-  if (len < 1e-6) return { x: 0, y: -1 }
-  return { x: x / len, y: y / len }
+function lerpAngle(from: number, to: number, amount: number) {
+  let diff = to - from
+  while (diff > Math.PI) diff -= Math.PI * 2
+  while (diff < -Math.PI) diff += Math.PI * 2
+  return from + diff * amount
 }
 
 export function hornFollowAmount() {
@@ -32,7 +33,6 @@ export function hornPoses(
   landmarks: FaceLandmark[],
   rect: VideoFitRect,
   level: number,
-  flipX = false,
 ): { left: HornPose; right: HornPose } | null {
   const forehead = landmarks[FOREHEAD]
   const chin = landmarks[CHIN]
@@ -40,7 +40,7 @@ export function hornPoses(
   const rightEye = landmarks[RIGHT_EYE]
   if (!forehead || !chin || !leftEye || !rightEye) return null
 
-  const toWrap = (point: FaceLandmark) => landmarkToWrap(point, rect, flipX)
+  const toWrap = (point: FaceLandmark) => landmarkToWrap(point, rect)
   const brow = toWrap(forehead)
   const jaw = toWrap(chin)
   const eyeL = toWrap(leftEye)
@@ -51,35 +51,25 @@ export function hornPoses(
 
   const midX = (eyeL.x + eyeR.x) * 0.5
   const midY = (eyeL.y + eyeR.y) * 0.5
-  const mobile = isMobileCameraPicker()
-  let right = normalize(eyeR.x - eyeL.x, eyeR.y - eyeL.y)
-  let up = { x: -right.y, y: right.x }
-  if (up.x * (brow.x - midX) + up.y * (brow.y - midY) < 0) {
-    up = { x: -up.x, y: -up.y }
-  }
-  // スマホは画面の上方向に固定。顔ベクトルの横成分で頭一つ分ずれるのを防ぐ
-  if (mobile || Math.abs(up.x) > Math.abs(up.y)) {
-    up = { x: 0, y: -1 }
-    right = { x: 1, y: 0 }
-  }
-
+  // 画面上方向。MediaPipe の 33→263 は人物の左目→右目なので、未反転だと左向きになり角が逆さまになる
+  const up = { x: 0, y: -1 }
   const upOffset = faceHeight * 0.58
   const sideOffset = faceWidth * 0.28
   const crownX = midX + up.x * upOffset
   const crownY = midY + up.y * upOffset
-  const angle = Math.atan2(right.y, right.x)
+  const angle = Math.atan2(up.x, -up.y)
   const size = faceWidth * lerp(0.42, 1.5, level / 100)
 
   return {
     left: {
-      x: crownX - right.x * sideOffset,
-      y: crownY - right.y * sideOffset,
+      x: crownX - sideOffset,
+      y: crownY,
       angle,
       size,
     },
     right: {
-      x: crownX + right.x * sideOffset,
-      y: crownY + right.y * sideOffset,
+      x: crownX + sideOffset,
+      y: crownY,
       angle,
       size,
     },
@@ -89,9 +79,10 @@ export function hornPoses(
 export function mixHornPose(previous: HornPose | null, next: HornPose, amount: number): HornPose {
   if (!previous) return next
   return {
-    x: lerp(previous.x, next.x, amount),
-    y: lerp(previous.y, next.y, amount),
-    angle: lerp(previous.angle, next.angle, amount),
+    // ランドマーク側ですでに平滑化しているため、位置を再度補間すると顔移動時に角が遅れる
+    x: next.x,
+    y: next.y,
+    angle: lerpAngle(previous.angle, next.angle, amount),
     size: lerp(previous.size, next.size, Math.min(amount, 0.22)),
   }
 }
