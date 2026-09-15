@@ -1,0 +1,17 @@
+.lab {
+  display: grid;
+  gap: 12px;
+}
+
+.label {
+  margin: 0;
+  text-align: center;
+  letter-spacing: 0.22em;
+  color: var(--color-gold);
+  font-size: 12px;
+}
+
+.title {
+  user-select: none;
+  touch-action: manipulation;
+}

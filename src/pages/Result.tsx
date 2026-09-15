@@ -1,3 +1,4 @@
+import { DebugUnlockTitle } from '../components/DebugLab'
 import { getResultComment } from '../lib/scoring'
 import type { SessionResult } from '../types'
 import styles from './Result.module.css'
@@ -11,7 +12,7 @@ export function Result({ result, onRetry }: ResultProps) {
   return (
     <section className={`screen ${styles.screen}`}>
       <header>
-        <h1 className="title">土下座の結果</h1>
+        <DebugUnlockTitle>土下座の結果</DebugUnlockTitle>
         <p className="subtitle">今日の床との距離</p>
       </header>
 

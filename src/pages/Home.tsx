@@ -1,4 +1,5 @@
 import { AudioAnalyzer } from '../components/AudioAnalyzer'
+import { DebugLab, DebugUnlockTitle } from '../components/DebugLab'
 import { FloorPicker } from '../components/FloorPicker'
 import { CameraSwitcher } from '../components/CameraSwitcher'
 import { CameraView } from '../components/CameraView'
@@ -12,14 +13,34 @@ type HomeProps = {
   onStart: () => void
 }
 
+function HomeLabAudio({
+  micEnabled,
+  onToggleMic,
+}: {
+  micEnabled: boolean
+  onToggleMic: (enabled: boolean) => void
+}) {
+  const audio = useAudioLevel(micEnabled)
+
+  return (
+    <AudioAnalyzer
+      enabled={micEnabled}
+      onToggle={onToggleMic}
+      volumeScore={audio.volumeScore}
+      volumeDb={audio.volumeDb}
+      wpm={audio.wpm}
+      error={audio.error}
+    />
+  )
+}
+
 export function Home({ micEnabled, onToggleMic, onStart }: HomeProps) {
   const camera = useCamera()
-  const audio = useAudioLevel(micEnabled)
 
   return (
     <section className={`screen ${styles.screen}`}>
       <header className={styles.hero}>
-        <h1 className="title">土下座バロメーター</h1>
+        <DebugUnlockTitle>土下座バロメーター</DebugUnlockTitle>
         <p className="subtitle">今、床と融合すべきか</p>
       </header>
 
@@ -36,14 +57,9 @@ export function Home({ micEnabled, onToggleMic, onStart }: HomeProps) {
       </div>
 
       <div className={styles.controls}>
-        <AudioAnalyzer
-          enabled={micEnabled}
-          onToggle={onToggleMic}
-          volumeScore={audio.volumeScore}
-          volumeDb={audio.volumeDb}
-          wpm={audio.wpm}
-          error={audio.error}
-        />
+        <DebugLab>
+          <HomeLabAudio micEnabled={micEnabled} onToggleMic={onToggleMic} />
+        </DebugLab>
         <CameraSwitcher
           devices={camera.devices}
           selectedDeviceId={camera.selectedDeviceId}

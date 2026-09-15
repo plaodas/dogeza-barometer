@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { AlertModal } from '../components/AlertModal'
-import { Floor } from '../components/Floor'
 import { AudioAnalyzer } from '../components/AudioAnalyzer'
 import { CameraSwitcher } from '../components/CameraSwitcher'
 import { CameraView } from '../components/CameraView'
+import { DebugLab } from '../components/DebugLab'
+import { Floor } from '../components/Floor'
 import { Meter } from '../components/Meter'
 import { useArPipeline } from '../hooks/useArPipeline'
 import { useAudioLevel } from '../hooks/useAudioLevel'
@@ -117,41 +118,43 @@ export function Measure({ micEnabled, onToggleMic, onFinish }: MeasureProps) {
       </div>
 
       <div className={styles.footer}>
-        <AudioAnalyzer
-          enabled={micEnabled}
-          onToggle={onToggleMic}
-          volumeScore={audio.volumeScore}
-          volumeDb={audio.volumeDb}
-          wpm={audio.wpm}
-          error={audio.error}
-        />
         <CameraSwitcher
           devices={camera.devices}
           selectedDeviceId={camera.selectedDeviceId}
           switching={camera.switching}
           onSelect={camera.switchCamera}
         />
-        <div className={`panel ${styles.demo}`}>
-          <label>
-            デモ用スライダー
-            <span>{forcedLevel === null ? '自動' : Math.round(forcedLevel)}</span>
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={forcedLevel ?? Math.round(dogeza.level)}
-            onChange={(event) => setForcedLevel(Number(event.target.value))}
+        <DebugLab>
+          <AudioAnalyzer
+            enabled={micEnabled}
+            onToggle={onToggleMic}
+            volumeScore={audio.volumeScore}
+            volumeDb={audio.volumeDb}
+            wpm={audio.wpm}
+            error={audio.error}
           />
-          <div className={styles.demoActions}>
-            <button type="button" className="btn btn-ghost" onClick={() => setForcedLevel(85)}>
-              80まで上げる
-            </button>
-            <button type="button" className="btn btn-ghost" onClick={() => setForcedLevel(null)}>
-              実測に戻す
-            </button>
+          <div className={`panel ${styles.demo}`}>
+            <label>
+              デモ用スライダー
+              <span>{forcedLevel === null ? '自動' : Math.round(forcedLevel)}</span>
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={forcedLevel ?? Math.round(dogeza.level)}
+              onChange={(event) => setForcedLevel(Number(event.target.value))}
+            />
+            <div className={styles.demoActions}>
+              <button type="button" className="btn btn-ghost" onClick={() => setForcedLevel(85)}>
+                80まで上げる
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => setForcedLevel(null)}>
+                実測に戻す
+              </button>
+            </div>
           </div>
-        </div>
+        </DebugLab>
         <button
           type="button"
           className="btn btn-ghost"
@@ -166,8 +169,7 @@ export function Measure({ micEnabled, onToggleMic, onFinish }: MeasureProps) {
       {alertOpen && (
         <AlertModal
           level={alertMax}
-          onMentalBow={() => setAlertOpen(false)}
-          onRealBow={() => setAlertOpen(false)}
+          onBow={() => onFinish({ maxLevel, recommendCount })}
           onClose={() => setAlertOpen(false)}
         />
       )}
