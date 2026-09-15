@@ -51,13 +51,14 @@ export function hornPoses(
 
   const midX = (eyeL.x + eyeR.x) * 0.5
   const midY = (eyeL.y + eyeR.y) * 0.5
+  const mobile = isMobileCameraPicker()
   let right = normalize(eyeR.x - eyeL.x, eyeR.y - eyeL.y)
   let up = { x: -right.y, y: right.x }
   if (up.x * (brow.x - midX) + up.y * (brow.y - midY) < 0) {
     up = { x: -up.x, y: -up.y }
   }
-  // 映像が正立なのにランドマーク上だけ顔が横倒しのときは、画面の上へ置く
-  if (Math.abs(up.x) > Math.abs(up.y)) {
+  // スマホは画面の上方向に固定。顔ベクトルの横成分で頭一つ分ずれるのを防ぐ
+  if (mobile || Math.abs(up.x) > Math.abs(up.y)) {
     up = { x: 0, y: -1 }
     right = { x: 1, y: 0 }
   }

@@ -50,25 +50,12 @@ export function layoutVideoCover(video: HTMLVideoElement, stage: HTMLElement) {
 }
 
 export function videoContentRect(video: HTMLVideoElement, wrap: HTMLElement): VideoFitRect {
-  const videoBox = video.getBoundingClientRect()
-  const wrapBox = wrap.getBoundingClientRect()
-  if (videoBox.width > 0 && videoBox.height > 0 && wrapBox.width > 0) {
-    return {
-      x: videoBox.left - wrapBox.left,
-      y: videoBox.top - wrapBox.top,
-      w: videoBox.width,
-      h: videoBox.height,
-    }
-  }
-  if (video.offsetWidth > 0 && video.offsetHeight > 0) {
-    return {
-      x: video.offsetLeft,
-      y: video.offsetTop,
-      w: video.offsetWidth,
-      h: video.offsetHeight,
-    }
-  }
-  return fittedVideoRect(wrap.clientWidth, wrap.clientHeight, video.videoWidth, video.videoHeight)
+  return fittedVideoRect(
+    wrap.clientWidth,
+    wrap.clientHeight,
+    video.videoWidth,
+    video.videoHeight,
+  )
 }
 
 export function landmarkToWrap(landmark: FaceLandmark, rect: VideoFitRect, flipX = false) {
