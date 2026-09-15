@@ -57,10 +57,16 @@ export function hornPoses(
   if (up.x * (brow.x - midX) + up.y * (brow.y - midY) < 0) {
     up = { x: -up.x, y: -up.y }
   }
-  // スマホは画面の上方向に固定。顔ベクトルの横成分で頭一つ分ずれるのを防ぐ
-  if (mobile || Math.abs(up.x) > Math.abs(up.y)) {
-    up = { x: 0, y: -1 }
-    right = { x: 1, y: 0 }
+  // スマホの場合は強制的に up = (0, -1) に固定される。ので👇はコメントアウト
+  // // スマホは画面の上方向に固定。顔ベクトルの横成分で頭一つ分ずれるのを防ぐ
+  // if (mobile || Math.abs(up.x) > Math.abs(up.y)) {
+  //   up = { x: 0, y: -1 }
+  //   right = { x: 1, y: 0 }
+  // }
+
+  // MediaPipe の顔向き推定はスマホだと横成分が暴れやすいので、up の x 成分だけ弱めると安定する。
+  if (mobile) {
+    up.x *= 0.3
   }
 
   const upOffset = faceHeight * 0.58
