@@ -33,6 +33,7 @@ export function hornPoses(
   landmarks: FaceLandmark[],
   rect: VideoFitRect,
   level: number,
+  flipX = false,
 ): { left: HornPose; right: HornPose } | null {
   const forehead = landmarks[FOREHEAD]
   const chin = landmarks[CHIN]
@@ -40,7 +41,7 @@ export function hornPoses(
   const rightEye = landmarks[RIGHT_EYE]
   if (!forehead || !chin || !leftEye || !rightEye) return null
 
-  const toWrap = (point: FaceLandmark) => landmarkToWrap(point, rect)
+  const toWrap = (point: FaceLandmark) => landmarkToWrap(point, rect, flipX)
   const brow = toWrap(forehead)
   const jaw = toWrap(chin)
   const eyeL = toWrap(leftEye)

@@ -72,7 +72,7 @@ export function CameraView({
             dogezaLevel={dogezaLevel}
             paused={arPaused}
             generation={arGeneration}
-            mirrorCanvas={mirrorPreview}
+            mirrorX={mirrorPreview && !isIOSSelfiePreview()}
           />
         )}
       </div>

@@ -21,7 +21,7 @@ type HornOverlayProps = {
   dogezaLevel: number
   paused?: boolean
   generation?: number
-  mirrorCanvas?: boolean
+  mirrorX?: boolean
 }
 
 type Pose = HornPose
@@ -36,13 +36,13 @@ export function HornOverlay({
   dogezaLevel,
   paused = false,
   generation = 0,
-  mirrorCanvas = false,
+  mirrorX = false,
 }: HornOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const levelRef = useRef(dogezaLevel)
   const pausedRef = useRef(paused)
   const generationRef = useRef(generation)
-  const mirrorCanvasRef = useRef(mirrorCanvas)
+  const mirrorXRef = useRef(mirrorX)
 
   useEffect(() => {
     levelRef.current = dogezaLevel
@@ -57,8 +57,8 @@ export function HornOverlay({
   }, [generation])
 
   useEffect(() => {
-    mirrorCanvasRef.current = mirrorCanvas
-  }, [mirrorCanvas])
+    mirrorXRef.current = mirrorX
+  }, [mirrorX])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -87,7 +87,7 @@ export function HornOverlay({
     let leftPose: Pose | null = null
     let rightPose: Pose | null = null
     let appliedGeneration = generationRef.current
-    let appliedMirror = mirrorCanvasRef.current
+    let appliedMirror = mirrorXRef.current
     let raf = 0
     let disposed = false
 
@@ -97,14 +97,8 @@ export function HornOverlay({
       if (width === 0 || height === 0) return
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
       renderer.setSize(width, height, false)
-      // CSS では WebGL が反転しない端末があるので、カメラの左右を入れ替えて鏡像にする
-      if (mirrorCanvasRef.current) {
-        camera.left = width / 2
-        camera.right = -width / 2
-      } else {
-        camera.left = -width / 2
-        camera.right = width / 2
-      }
+      camera.left = -width / 2
+      camera.right = width / 2
       camera.top = height / 2
       camera.bottom = -height / 2
       camera.updateProjectionMatrix()
@@ -135,10 +129,10 @@ export function HornOverlay({
 
       if (
         appliedGeneration !== generationRef.current ||
-        appliedMirror !== mirrorCanvasRef.current
+        appliedMirror !== mirrorXRef.current
       ) {
         appliedGeneration = generationRef.current
-        appliedMirror = mirrorCanvasRef.current
+        appliedMirror = mirrorXRef.current
         leftPose = null
         rightPose = null
         smoothLevel = 0
@@ -155,7 +149,7 @@ export function HornOverlay({
       } else {
         const rect = videoContentRect(video, wrap)
         smoothLevel = lerp(smoothLevel, levelRef.current, 0.18)
-        const poses = hornPoses(landmarks, rect, smoothLevel)
+        const poses = hornPoses(landmarks, rect, smoothLevel, mirrorXRef.current)
         if (poses) {
           leftPose = applyPose(left, poses.left, leftPose)
           rightPose = applyPose(right, poses.right, rightPose)
