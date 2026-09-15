@@ -5,6 +5,10 @@
 - デモ: [dogeza-barometer.vercel.app](https://dogeza-barometer.vercel.app/)
 - リポジトリ: [github.com/plaodas/dogeza-barometer](https://github.com/plaodas/dogeza-barometer)
 
+<p align="center">
+  <img src="docs/home.png" alt="ホーム画面。タイトル、カメラプレビュー、マイク、土下座する床の選択" width="420" />
+</p>
+
 フリーランスエンジニアのポートフォリオ兼、**AI ペアプロでゼロからプロダクトを出す**実験です。仕様・実機確認・やり直しの判断は自分、実装の大半は Cursor 上のエージェントに任せています。
 
 ## できること
@@ -14,6 +18,10 @@
 - 計測中だけ、顔の上に Three.js の鬼の角。レベルで大きさと色が変わる
 - 正面 / 背面 / 仮想カメラの切り替え（スマホはストリームを止めてから撮り直し）
 - 床テクスチャと、レベル 80 以上で「土下座推奨」アラート
+
+| 計測 | 土下座推奨 | 結果 |
+| :---: | :---: | :---: |
+| <img src="docs/measure.png" alt="計測画面。土下座レベル 85 のメーター" width="280" /> | <img src="docs/alert.png" alt="土下座チャンス到来のアラート" width="280" /> | <img src="docs/result.png" alt="結果画面。最高レベルと推奨回数" width="280" /> |
 
 スコアの骨子は次の式です。表情を主、声を副にしています。
 
