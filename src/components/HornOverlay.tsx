@@ -9,17 +9,11 @@ import {
   type Mesh,
 } from 'three'
 import { createHornMaterial, createHornMesh } from '../lib/hornMesh'
+import { hornFollowAmount, hornPoses, mixHornPose, type HornPose } from '../lib/hornPose'
 import { getHornColor } from '../lib/scoring'
-import { landmarkToWrap, videoContentRect } from '../lib/videoLayout'
+import { videoContentRect } from '../lib/videoLayout'
 import type { FaceLandmark } from '../types'
 import styles from './HornOverlay.module.css'
-
-const LEFT_HORN = 109
-const RIGHT_HORN = 338
-const FOREHEAD = 10
-const CHIN = 152
-const LEFT_EYE = 33
-const RIGHT_EYE = 263
 
 type HornOverlayProps = {
   videoRef: RefObject<HTMLVideoElement | null>
@@ -29,55 +23,10 @@ type HornOverlayProps = {
   generation?: number
 }
 
-type Pose = {
-  x: number
-  y: number
-  angle: number
-  size: number
-}
+type Pose = HornPose
 
 function lerp(from: number, to: number, amount: number) {
   return from + (to - from) * amount
-}
-
-function poseFor(
-  landmarks: FaceLandmark[],
-  index: number,
-  rect: ReturnType<typeof videoContentRect>,
-  level: number,
-): Pose | null {
-  const anchor = landmarks[index]
-  const forehead = landmarks[FOREHEAD]
-  const chin = landmarks[CHIN]
-  const leftEye = landmarks[LEFT_EYE]
-  const rightEye = landmarks[RIGHT_EYE]
-  if (!anchor || !forehead || !chin || !leftEye || !rightEye) return null
-
-  const point = landmarkToWrap(anchor, rect)
-  const up = landmarkToWrap(forehead, rect)
-  const down = landmarkToWrap(chin, rect)
-  const eyeL = landmarkToWrap(leftEye, rect)
-  const eyeR = landmarkToWrap(rightEye, rect)
-  const faceWidth = Math.hypot(eyeR.x - eyeL.x, eyeR.y - eyeL.y)
-  const faceHeight = Math.hypot(up.x - down.x, up.y - down.y)
-  const upLen = Math.max(Math.hypot(up.x - down.x, up.y - down.y), 1)
-  const upX = (up.x - down.x) / upLen
-  const upY = (up.y - down.y) / upLen
-  const centerX = (eyeL.x + eyeR.x) / 2
-  const centerY = (eyeL.y + eyeR.y) / 2
-  const outX = point.x - centerX
-  const outY = point.y - centerY
-  const outLen = Math.max(Math.hypot(outX, outY), 1)
-  const dirX = upX * 0.9 + (outX / outLen) * 0.22
-  const dirY = upY * 0.9 + (outY / outLen) * 0.22
-  const worldDirX = dirX
-  const worldDirY = -dirY
-  const angle = Math.atan2(worldDirY, worldDirX) - Math.PI / 2
-  const crownX = point.x + upX * faceHeight * 0.14
-  const crownY = point.y + upY * faceHeight * 0.14
-  const size = faceWidth * lerp(0.42, 1.5, level / 100)
-
-  return { x: crownX, y: crownY, angle, size }
 }
 
 export function HornOverlay({
@@ -153,15 +102,10 @@ export function HornOverlay({
     window.addEventListener('orientationchange', resize)
     resize()
 
+    const follow = hornFollowAmount()
+
     const applyPose = (mesh: Mesh, next: Pose, previous: Pose | null) => {
-      const mixed = previous
-        ? {
-            x: lerp(previous.x, next.x, 0.35),
-            y: lerp(previous.y, next.y, 0.35),
-            angle: lerp(previous.angle, next.angle, 0.28),
-            size: lerp(previous.size, next.size, 0.22),
-          }
-        : next
+      const mixed = mixHornPose(previous, next, follow)
       mesh.position.set(mixed.x - wrap.clientWidth / 2, -(mixed.y - wrap.clientHeight / 2), 0)
       mesh.rotation.set(0.45, 0, mixed.angle)
       mesh.scale.setScalar(mixed.size)
@@ -192,11 +136,10 @@ export function HornOverlay({
       } else {
         const rect = videoContentRect(video, wrap)
         smoothLevel = lerp(smoothLevel, levelRef.current, 0.18)
-        const nextLeft = poseFor(landmarks, LEFT_HORN, rect, smoothLevel)
-        const nextRight = poseFor(landmarks, RIGHT_HORN, rect, smoothLevel)
-        if (nextLeft && nextRight) {
-          leftPose = applyPose(left, nextLeft, leftPose)
-          rightPose = applyPose(right, nextRight, rightPose)
+        const poses = hornPoses(landmarks, rect, smoothLevel)
+        if (poses) {
+          leftPose = applyPose(left, poses.left, leftPose)
+          rightPose = applyPose(right, poses.right, rightPose)
           targetTint.set(getHornColor(smoothLevel))
           tint.lerp(targetTint, 0.2)
           material.color.copy(tint)

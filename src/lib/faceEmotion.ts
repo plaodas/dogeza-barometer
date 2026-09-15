@@ -1,4 +1,5 @@
 import { clamp } from './scoring'
+import type { FaceLandmark } from '../types'
 
 type BlendMap = Record<string, number>
 
@@ -66,6 +67,23 @@ export function emotionFromBlendshapes(map: BlendMap) {
     sadness,
     score: combineFaceScore(anger, confusion, sadness),
   }
+}
+
+export function smoothLandmarks(
+  previous: FaceLandmark[] | null,
+  next: FaceLandmark[] | ArrayLike<FaceLandmark>,
+  amount: number,
+) {
+  const points = Array.from(next)
+  if (!previous || previous.length !== points.length) return points
+  return points.map((point, index) => {
+    const last = previous[index]
+    return {
+      x: last.x + (point.x - last.x) * amount,
+      y: last.y + (point.y - last.y) * amount,
+      z: last.z + (point.z - last.z) * amount,
+    }
+  })
 }
 
 export function smoothEmotion(

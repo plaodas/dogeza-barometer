@@ -4,7 +4,9 @@ import {
   blendshapesToMap,
   emotionFromBlendshapes,
   smoothEmotion,
+  smoothLandmarks,
 } from '../lib/faceEmotion'
+import { isMobileCameraPicker } from '../lib/cameraDevices'
 import type { FaceEmotion, FaceLandmark } from '../types'
 
 const idleEmotion: FaceEmotion = {
@@ -27,9 +29,9 @@ async function createFaceLandmarker() {
     outputFaceBlendshapes: true,
     outputFacialTransformationMatrixes: true,
     numFaces: 1,
-    minFaceDetectionConfidence: 0.3,
-    minFacePresenceConfidence: 0.3,
-    minTrackingConfidence: 0.3,
+    minFaceDetectionConfidence: 0.7,
+    minFacePresenceConfidence: 0.7,
+    minTrackingConfidence: 0.7,
   }
 
   try {
@@ -93,6 +95,8 @@ export function useFaceEmotion(
     let raf = 0
     let lastTimestamp = -1
     let lastPublish = 0
+    let smoothedLandmarks: FaceLandmark[] | null = null
+    const landmarkFollow = isMobileCameraPicker() ? 0.2 : 0.35
 
     async function start() {
       try {
@@ -119,6 +123,7 @@ export function useFaceEmotion(
       if (pausedRef.current) {
         landmarksRef.current = null
         matrixRef.current = null
+        smoothedLandmarks = null
         raf = requestAnimationFrame(tick)
         return
       }
@@ -126,6 +131,7 @@ export function useFaceEmotion(
       if (appliedCalibration.current !== calibrationRef.current) {
         appliedCalibration.current = calibrationRef.current
         lastTimestamp = -1
+        smoothedLandmarks = null
       }
 
       if (video && landmarker && video.readyState >= 2 && now > lastTimestamp) {
@@ -134,7 +140,10 @@ export function useFaceEmotion(
           const result = landmarker.detectForVideo(video, now)
           const landmarks = result.faceLandmarks[0]
           const detected = (landmarks?.length ?? 0) > 0
-          landmarksRef.current = detected ? landmarks : null
+          smoothedLandmarks = detected
+            ? smoothLandmarks(smoothedLandmarks, landmarks, landmarkFollow)
+            : null
+          landmarksRef.current = smoothedLandmarks
           matrixRef.current = detected
             ? (result.facialTransformationMatrixes[0]?.data ?? null)
             : null
