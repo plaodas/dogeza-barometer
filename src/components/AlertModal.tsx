@@ -3,15 +3,13 @@ import styles from './AlertModal.module.css'
 
 type AlertModalProps = {
   level: number
-  onMentalBow: () => void
-  onRealBow: () => void
+  onBow: () => void
   onClose: () => void
 }
 
 export function AlertModal({
   level,
-  onMentalBow,
-  onRealBow,
+  onBow,
   onClose,
 }: AlertModalProps) {
   return createPortal(
@@ -24,11 +22,8 @@ export function AlertModal({
         <p className={styles.maxLabel}>MAX</p>
         <p className={styles.level}>{Math.round(level)}</p>
         <div className={styles.actions}>
-          <button type="button" className="btn btn-gold" onClick={onMentalBow}>
-            気持ちだけ土下座する
-          </button>
-          <button type="button" className="btn btn-primary" onClick={onRealBow}>
-            現実で土下座する
+          <button type="button" className="btn btn-primary" onClick={onBow}>
+            土下座する
           </button>
           <button type="button" className="btn btn-ghost" onClick={onClose}>
             閉じる
