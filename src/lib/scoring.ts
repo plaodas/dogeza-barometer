@@ -39,7 +39,7 @@ export function getMeterColor(level: number) {
 
 export function getHornColor(level: number) {
   if (level <= 30) return '#2f7fff'
-  if (level <= 50) return '#f2c94c'
+  if (level <= 60) return '#f2c94c'
   return '#d7263d'
 }
 
