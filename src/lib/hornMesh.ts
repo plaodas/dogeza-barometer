@@ -6,6 +6,7 @@ import {
   SRGBColorSpace,
   type Texture,
   Euler,
+  DoubleSide,
 } from 'three'
 import type { FaceLandmark } from '../types'
 
@@ -44,6 +45,7 @@ export function createHornMaterial() {
   sharedMaterial = new MeshStandardMaterial({
     map: getHornTexture(),
     color: '#f2c94c',
+    side: DoubleSide,
   })
   return sharedMaterial
 }
