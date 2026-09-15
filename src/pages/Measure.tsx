@@ -118,6 +118,13 @@ export function Measure({ micEnabled, onToggleMic, onFinish }: MeasureProps) {
       </div>
 
       <div className={styles.footer}>
+        <button
+          type="button"
+          className={`btn ${styles.finish}`}
+          onClick={() => onFinish({ maxLevel, recommendCount })}
+        >
+          計測を終える
+        </button>
         <CameraSwitcher
           devices={camera.devices}
           selectedDeviceId={camera.selectedDeviceId}
@@ -155,13 +162,6 @@ export function Measure({ micEnabled, onToggleMic, onFinish }: MeasureProps) {
             </div>
           </div>
         </DebugLab>
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={() => onFinish({ maxLevel, recommendCount })}
-        >
-          計測を終える
-        </button>
       </div>
 
       <Floor pinned height={`${floorHeight}svh`} />

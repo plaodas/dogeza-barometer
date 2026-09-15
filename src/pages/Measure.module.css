@@ -1,7 +1,9 @@
 .screen {
   gap: 12px;
   padding-top: 16px;
-  padding-bottom: 8px;
+  padding-bottom: 20vh;
+  overflow-y: auto;
+  max-height: 100svh;
 }
 
 .top {
@@ -56,7 +58,16 @@
   display: grid;
   gap: 12px;
   width: min(420px, 100%);
-  margin: auto auto 24px;
+  margin: 8px auto 0;
+}
+
+.finish {
+  width: 100%;
+  background: rgba(8, 16, 24, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
 }
 
 .demo {
