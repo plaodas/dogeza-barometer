@@ -167,6 +167,10 @@ button {
   transition: height 420ms ease-out, filter 420ms ease-out;
 }
 
+.floor--pinned {
+  position: fixed;
+}
+
 .floor::before,
 .floor::after {
   position: absolute;

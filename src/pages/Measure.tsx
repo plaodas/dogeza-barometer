@@ -48,7 +48,7 @@ export function Measure({ micEnabled, onToggleMic, onFinish }: MeasureProps) {
 
   const dogeza = useDogezaLevel(face.score, audio.volumeScore, audio.wpmScore, forcedLevel)
   const sink = dogeza.level * 0.28
-  const floorHeight = 14 + dogeza.level * 0.72
+  const floorHeight = 14 + dogeza.level * 0.86
 
   useEffect(() => {
     setMaxLevel((current) => Math.max(current, dogeza.level))
@@ -161,7 +161,7 @@ export function Measure({ micEnabled, onToggleMic, onFinish }: MeasureProps) {
         </button>
       </div>
 
-      <Floor height={`${floorHeight}vh`} />
+      <Floor pinned height={`${floorHeight}svh`} />
 
       {alertOpen && (
         <AlertModal
