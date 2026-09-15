@@ -21,6 +21,7 @@ type HornOverlayProps = {
   dogezaLevel: number
   paused?: boolean
   generation?: number
+  mirrorX?: boolean
 }
 
 type Pose = HornPose
@@ -35,11 +36,13 @@ export function HornOverlay({
   dogezaLevel,
   paused = false,
   generation = 0,
+  mirrorX = false,
 }: HornOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const levelRef = useRef(dogezaLevel)
   const pausedRef = useRef(paused)
   const generationRef = useRef(generation)
+  const mirrorXRef = useRef(mirrorX)
 
   useEffect(() => {
     levelRef.current = dogezaLevel
@@ -52,6 +55,10 @@ export function HornOverlay({
   useEffect(() => {
     generationRef.current = generation
   }, [generation])
+
+  useEffect(() => {
+    mirrorXRef.current = mirrorX
+  }, [mirrorX])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -80,6 +87,7 @@ export function HornOverlay({
     let leftPose: Pose | null = null
     let rightPose: Pose | null = null
     let appliedGeneration = generationRef.current
+    let appliedMirror = mirrorXRef.current
     let raf = 0
     let disposed = false
 
@@ -119,8 +127,9 @@ export function HornOverlay({
       const landmarks = landmarksRef.current
       const width = wrap.clientWidth
 
-      if (appliedGeneration !== generationRef.current) {
+      if (appliedGeneration !== generationRef.current || appliedMirror !== mirrorXRef.current) {
         appliedGeneration = generationRef.current
+        appliedMirror = mirrorXRef.current
         leftPose = null
         rightPose = null
         smoothLevel = 0
@@ -136,7 +145,7 @@ export function HornOverlay({
       } else {
         const rect = videoContentRect(video, wrap)
         smoothLevel = lerp(smoothLevel, levelRef.current, 0.18)
-        const poses = hornPoses(landmarks, rect, smoothLevel)
+        const poses = hornPoses(landmarks, rect, smoothLevel, mirrorXRef.current)
         if (poses) {
           leftPose = applyPose(left, poses.left, leftPose)
           rightPose = applyPose(right, poses.right, rightPose)

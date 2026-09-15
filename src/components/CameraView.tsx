@@ -55,11 +55,11 @@ export function CameraView({
       <span className={styles.label}>{badge ?? (ready ? 'LIVE' : 'DUMMY')}</span>
       <div
         ref={stageRef}
-        className={`${styles.stage} ${mirrorPreview ? styles.stageMirrored : ''} ${faded ? styles.stageFaded : ''}`}
+        className={`${styles.stage} ${faded ? styles.stageFaded : ''}`}
       >
         <video
           ref={videoRef}
-          className={`${styles.video} ${mirrorPreview && isIOSSelfiePreview() ? styles.undoNativeMirror : ''}`}
+          className={`${styles.video} ${mirrorPreview && !isIOSSelfiePreview() ? styles.videoMirrored : ''}`}
           muted
           playsInline
           autoPlay
@@ -72,6 +72,7 @@ export function CameraView({
             dogezaLevel={dogezaLevel}
             paused={arPaused}
             generation={arGeneration}
+            mirrorX={mirrorPreview}
           />
         )}
       </div>

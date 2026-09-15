@@ -61,9 +61,10 @@ export function videoContentRect(video: HTMLVideoElement, wrap: HTMLElement): Vi
   return fittedVideoRect(wrap.clientWidth, wrap.clientHeight, video.videoWidth, video.videoHeight)
 }
 
-export function landmarkToWrap(landmark: FaceLandmark, rect: VideoFitRect) {
+export function landmarkToWrap(landmark: FaceLandmark, rect: VideoFitRect, flipX = false) {
+  const nx = flipX ? 1 - landmark.x : landmark.x
   return {
-    x: rect.x + landmark.x * rect.w,
+    x: rect.x + nx * rect.w,
     y: rect.y + landmark.y * rect.h,
   }
 }
