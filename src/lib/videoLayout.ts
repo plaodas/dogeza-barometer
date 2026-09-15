@@ -17,13 +17,15 @@ export function isIOSSelfiePreview() {
   )
 }
 
-export function videoContentRect(video: HTMLVideoElement, wrap: HTMLElement): VideoFitRect {
-  const boxW = wrap.clientWidth
-  const boxH = wrap.clientHeight
-  const vw = Math.max(video.videoWidth, 1)
-  const vh = Math.max(video.videoHeight, 1)
-  const fit = getComputedStyle(video).objectFit === 'contain' ? 'contain' : 'cover'
-  const scale = fit === 'cover' ? Math.max(boxW / vw, boxH / vh) : Math.min(boxW / vw, boxH / vh)
+export function fittedVideoRect(
+  boxW: number,
+  boxH: number,
+  videoW: number,
+  videoH: number,
+): VideoFitRect {
+  const vw = Math.max(videoW, 1)
+  const vh = Math.max(videoH, 1)
+  const scale = Math.max(boxW / vw, boxH / vh)
   const w = vw * scale
   const h = vh * scale
   return {
@@ -32,6 +34,31 @@ export function videoContentRect(video: HTMLVideoElement, wrap: HTMLElement): Vi
     w,
     h,
   }
+}
+
+export function layoutVideoCover(video: HTMLVideoElement, stage: HTMLElement) {
+  const rect = fittedVideoRect(
+    stage.clientWidth,
+    stage.clientHeight,
+    video.videoWidth,
+    video.videoHeight,
+  )
+  video.style.width = `${rect.w}px`
+  video.style.height = `${rect.h}px`
+  video.style.left = `${rect.x}px`
+  video.style.top = `${rect.y}px`
+}
+
+export function videoContentRect(video: HTMLVideoElement, wrap: HTMLElement): VideoFitRect {
+  if (video.offsetWidth > 0 && video.offsetHeight > 0) {
+    return {
+      x: video.offsetLeft,
+      y: video.offsetTop,
+      w: video.offsetWidth,
+      h: video.offsetHeight,
+    }
+  }
+  return fittedVideoRect(wrap.clientWidth, wrap.clientHeight, video.videoWidth, video.videoHeight)
 }
 
 export function landmarkToWrap(landmark: FaceLandmark, rect: VideoFitRect) {

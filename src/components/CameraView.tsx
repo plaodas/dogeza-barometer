@@ -1,7 +1,7 @@
-import type { RefObject } from 'react'
+import { useLayoutEffect, useRef, type RefObject } from 'react'
 import type { FaceLandmark } from '../types'
 import { HornOverlay } from './HornOverlay'
-import { isIOSSelfiePreview } from '../lib/videoLayout'
+import { isIOSSelfiePreview, layoutVideoCover } from '../lib/videoLayout'
 import styles from './CameraView.module.css'
 
 type CameraViewProps = {
@@ -31,10 +31,30 @@ export function CameraView({
   arPaused = false,
   arGeneration = 0,
 }: CameraViewProps) {
+  const stageRef = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    const video = videoRef.current
+    const stage = stageRef.current
+    if (!video || !stage) return
+
+    const layout = () => layoutVideoCover(video, stage)
+    layout()
+    video.addEventListener('loadedmetadata', layout)
+    video.addEventListener('resize', layout)
+    const observer = new ResizeObserver(layout)
+    observer.observe(stage)
+    return () => {
+      video.removeEventListener('loadedmetadata', layout)
+      video.removeEventListener('resize', layout)
+      observer.disconnect()
+    }
+  }, [arGeneration, ready, videoRef])
   return (
     <div className={`${styles.wrap} ${compact ? styles.compact : styles.wide}`}>
       <span className={styles.label}>{badge ?? (ready ? 'LIVE' : 'DUMMY')}</span>
       <div
+        ref={stageRef}
         className={`${styles.stage} ${mirrorPreview ? styles.stageMirrored : ''} ${faded ? styles.stageFaded : ''}`}
       >
         <video
