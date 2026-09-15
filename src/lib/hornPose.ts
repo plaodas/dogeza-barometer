@@ -19,7 +19,8 @@ function lerp(from: number, to: number, amount: number) {
 }
 
 function normalize(x: number, y: number) {
-  const len = Math.max(Math.hypot(x, y), 1)
+  const len = Math.hypot(x, y)
+  if (len < 1e-6) return { x: 0, y: -1 }
   return { x: x / len, y: y / len }
 }
 
@@ -40,24 +41,32 @@ export function hornPoses(
   if (!forehead || !chin || !leftEye || !rightEye) return null
 
   const toWrap = (point: FaceLandmark) => landmarkToWrap(point, rect, flipX)
-  const upPt = toWrap(forehead)
-  const downPt = toWrap(chin)
+  const brow = toWrap(forehead)
+  const jaw = toWrap(chin)
   const eyeL = toWrap(leftEye)
   const eyeR = toWrap(rightEye)
   const faceWidth = Math.hypot(eyeR.x - eyeL.x, eyeR.y - eyeL.y)
-  const faceHeight = Math.hypot(upPt.x - downPt.x, upPt.y - downPt.y)
+  const faceHeight = Math.hypot(brow.x - jaw.x, brow.y - jaw.y)
   if (faceWidth < 2 || faceHeight < 2) return null
 
-  const mobile = isMobileCameraPicker()
-  const centerX = (eyeL.x + eyeR.x) * 0.5
-  const centerY = (eyeL.y + eyeR.y) * 0.5
-  const up = normalize(upPt.x - downPt.x, upPt.y - downPt.y)
-  const right = normalize(eyeR.x - eyeL.x, eyeR.y - eyeL.y)
-  const upOffset = faceHeight * (mobile ? 0.52 : 0.48)
-  const sideOffset = faceWidth * (mobile ? 0.28 : 0.32)
-  const crownX = centerX + up.x * upOffset
-  const crownY = centerY + up.y * upOffset
-  const angle = Math.atan2(-up.y, up.x) - Math.PI / 2
+  const midX = (eyeL.x + eyeR.x) * 0.5
+  const midY = (eyeL.y + eyeR.y) * 0.5
+  let right = normalize(eyeR.x - eyeL.x, eyeR.y - eyeL.y)
+  let up = { x: -right.y, y: right.x }
+  if (up.x * (brow.x - midX) + up.y * (brow.y - midY) < 0) {
+    up = { x: -up.x, y: -up.y }
+  }
+  // 映像が正立なのにランドマーク上だけ顔が横倒しのときは、画面の上へ置く
+  if (Math.abs(up.x) > Math.abs(up.y)) {
+    up = { x: 0, y: -1 }
+    right = { x: 1, y: 0 }
+  }
+
+  const upOffset = faceHeight * 0.58
+  const sideOffset = faceWidth * 0.28
+  const crownX = midX + up.x * upOffset
+  const crownY = midY + up.y * upOffset
+  const angle = Math.atan2(right.y, right.x)
   const size = faceWidth * lerp(0.42, 1.5, level / 100)
 
   return {
