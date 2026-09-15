@@ -6,9 +6,10 @@ import styles from './Result.module.css'
 type ResultProps = {
   result: SessionResult
   onRetry: () => void
+  onHome: () => void
 }
 
-export function Result({ result, onRetry }: ResultProps) {
+export function Result({ result, onRetry, onHome }: ResultProps) {
   return (
     <section className={`screen ${styles.screen}`}>
       <header>
@@ -31,9 +32,12 @@ export function Result({ result, onRetry }: ResultProps) {
         <p className={styles.comment}>{getResultComment(result.maxLevel)}</p>
       </div>
 
-      <div className={styles.actions}>
+      <div className={`btn-row ${styles.actions}`}>
         <button type="button" className="btn btn-primary" onClick={onRetry}>
           もう一度計測する
+        </button>
+        <button type="button" className={`btn btn-ghost ${styles.home}`} onClick={onHome}>
+          ホームへ戻る
         </button>
       </div>
     </section>

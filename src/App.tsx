@@ -36,6 +36,7 @@ export default function App() {
         <Result
           result={result}
           onRetry={() => setScreen('measure')}
+          onHome={() => setScreen('home')}
         />
       )}
       {screen !== 'measure' && <Floor />}

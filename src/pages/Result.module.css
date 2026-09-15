@@ -1,7 +1,6 @@
 .screen {
   justify-content: center;
-  gap: 28px;
-  padding-bottom: 18vh;
+  gap: 22px;
 }
 
 .card {
@@ -49,5 +48,14 @@
 
 .actions {
   width: min(420px, 100%);
-  margin: 0 auto;
+  margin: 0 auto 22vh;
+}
+
+.home {
+  width: 100%;
+  background: rgba(8, 16, 24, 0.92);
+  border-color: rgba(255, 255, 255, 0.42);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
 }
